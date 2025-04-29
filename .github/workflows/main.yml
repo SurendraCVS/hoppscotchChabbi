@@ -1,5 +1,6 @@
 name: Hoppscotch API Tests
 
+# Updated workflow file to fix issues
 on:
   push:
     branches: [ main ]
