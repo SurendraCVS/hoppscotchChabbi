@@ -59,13 +59,5 @@ jobs:
           hopp test auth.json -e ../env.json --reporter junit -o test-results.xml
         }
 
-    - name: Upload Test Results
-      uses: actions/upload-artifact@v3.1.3
-      if: always()
-      with:
-        name: test-results
-        path: chabbi_project/auth/test-results.xml
-        retention-days: 30
-
     - name: Echo Success
       run: echo "CI/CD pipeline completed successfully"
