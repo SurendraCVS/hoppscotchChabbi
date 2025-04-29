@@ -18,7 +18,8 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '18'
+        node-version: '20'
+        cache: 'npm'
 
     - name: Verify Project Structure
       run: |
@@ -36,40 +37,35 @@ jobs:
       run: |
         echo "Installing Hoppscotch CLI v0.20.3"
         npm install -g @hoppscotch/cli@0.20.3
-        
-        # Create File polyfill
-        cat > file-polyfill.js << 'EOF'
-        if (typeof File === 'undefined') {
-          global.File = class File {
-            constructor(bits, name, options = {}) {
-              this.bits = bits;
-              this.name = name;
-              this.options = options;
-            }
-          };
-          global.FormData = class FormData {
-            constructor() {
-              this.data = {};
-            }
-            append(key, value) {
-              this.data[key] = value;
-            }
-          };
-          global.Blob = class Blob {};
-        }
-        EOF
-        
-        # Try running with the polyfill
-        NODE_OPTIONS="--require $(pwd)/file-polyfill.js" hopp --version
+        hopp --version
 
     - name: Run Hoppscotch Tests
       working-directory: chabbi_project/auth
       run: |
         echo "Running Hoppscotch tests with version 0.20.3"
-        
-        # Use the polyfill for test execution
-        export NODE_OPTIONS="--require $(pwd)/../../file-polyfill.js"
-        hopp test auth.json -e ../env.json
+        hopp test auth.json -e ../env.json || {
+          echo "Failed with v0.20.3, trying fallback version v0.11.1"
+          npm install -g @hoppscotch/cli@0.11.1
+          hopp --version
+          hopp test auth.json -e ../env.json
+        }
+
+    - name: Generate Test Reports
+      working-directory: chabbi_project/auth
+      run: |
+        echo "Generating JUnit test reports"
+        hopp test auth.json -e ../env.json --reporter junit -o test-results.xml || {
+          echo "Failed report generation with current version, trying fallback"
+          hopp test auth.json -e ../env.json --reporter junit -o test-results.xml
+        }
+
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results
+        path: chabbi_project/auth/test-results.xml
+        retention-days: 30
 
     - name: Echo Success
       run: echo "CI/CD pipeline completed successfully"
