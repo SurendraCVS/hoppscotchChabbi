@@ -2,9 +2,9 @@ name: Hoppscotch API Tests
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
   workflow_dispatch:  # Allows manual triggering
 
 jobs:
@@ -30,8 +30,8 @@ jobs:
         cd chabbi_project/auth
         # Use the global environment file from the parent directory
         hopp test auth.json -e ../env.json
-        # Record test result to output
-        echo "::set-output name=test_exit_code::$?"
+        # Store test result to outputs using the correct syntax
+        echo "test_exit_code=$?" >> $GITHUB_OUTPUT
         
     - name: Generate JUnit report
       if: always()  # Run even if previous step fails
