@@ -85,9 +85,9 @@ jobs:
       id: run_tests
       continue-on-error: true  # Continue workflow even if tests fail due to status code assertions
       run: |
-        cd chabbi_project/auth
-        # Use node with the polyfill script before running hopp
-        node -r ../../file-polyfill.js $(which hopp) test auth.json -e ../env.json
+        cd chabbi_project
+        # Use our custom script that includes polyfills and handles environment format
+        node run-tests.js
         # Store test result to outputs using the correct syntax
         echo "test_exit_code=$?" >> $GITHUB_OUTPUT
         
@@ -95,9 +95,9 @@ jobs:
       if: always()  # Run even if previous step fails
       continue-on-error: true  # Prevent report generation from failing the workflow
       run: |
-        cd chabbi_project/auth
-        # Use node with the polyfill script before running hopp
-        node -r ../../file-polyfill.js $(which hopp) test auth.json -e ../env.json --reporter-junit test-results.xml
+        cd chabbi_project
+        # Use our custom script with JUnit report generation
+        node run-tests.js --junit
         
     - name: Upload test results
       if: always()
