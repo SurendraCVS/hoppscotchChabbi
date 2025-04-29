@@ -32,6 +32,15 @@ jobs:
         echo "=== Test Files Available ==="
         find . -name "*.json" -type f | grep -v "node_modules" || echo "No JSON test files found"
 
+    - name: Fix Environment File Format
+      run: |
+        echo "Fixing environment file format for Hoppscotch CLI"
+        cat chabbi_project/env.json
+        # Create a correctly formatted environment file for Hoppscotch CLI v0.20.3
+        jq '{environment: {name: .name, variables: [.variables | to_entries[] | {key: .key, value: .value}]}}' chabbi_project/env.json > chabbi_project/env_fixed.json
+        echo "Fixed environment file:"
+        cat chabbi_project/env_fixed.json
+
     - name: Install Hoppscotch CLI
       run: |
         echo "Installing Hoppscotch CLI v0.20.3"
@@ -42,20 +51,30 @@ jobs:
       working-directory: chabbi_project/auth
       run: |
         echo "Running Hoppscotch tests with version 0.20.3"
-        hopp test auth.json -e ../env.json || {
+        hopp test auth.json -e ../env_fixed.json || {
           echo "Failed with v0.20.3, trying fallback version v0.11.1"
           npm install -g @hoppscotch/cli@0.11.1
-          hopp --version
-          hopp test auth.json -e ../env.json
+          
+          # Create v0.11.1 compatible environment file if needed
+          cd ..
+          jq '{id: "env_\(.name)", name: .name, values: [.variables | to_entries[] | {key: .key, value: .value, enabled: true}]}' env.json > env_v11.json
+          echo "Environment file for v0.11.1:"
+          cat env_v11.json
+          cd auth
+          
+          hopp test auth.json -e ../env_v11.json
         }
 
     - name: Generate Test Reports
       working-directory: chabbi_project/auth
       run: |
         echo "Generating JUnit test reports"
-        hopp test auth.json -e ../env.json --reporter junit -o test-results.xml || {
+        hopp test auth.json -e ../env_fixed.json --reporter junit -o test-results.xml || {
           echo "Failed report generation with current version, trying fallback"
-          hopp test auth.json -e ../env.json --reporter junit -o test-results.xml
+          cd ..
+          jq '{id: "env_\(.name)", name: .name, values: [.variables | to_entries[] | {key: .key, value: .value, enabled: true}]}' env.json > env_v11.json
+          cd auth
+          hopp test auth.json -e ../env_v11.json --reporter junit -o test-results.xml
         }
 
     - name: Echo Success
