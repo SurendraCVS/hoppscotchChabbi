@@ -34,14 +34,19 @@ jobs:
 
     - name: Install Hoppscotch CLI
       run: |
-        echo "Installing latest Hoppscotch CLI"
-        npm install -g @hoppscotch/cli
+        echo "Installing Hoppscotch CLI v0.17.1 (known compatible version)"
+        npm install -g @hoppscotch/cli@0.17.1
+        # Set up global File object needed by Hoppscotch
+        echo 'globalThis.File = class File {};' > file-polyfill.js
+        export NODE_OPTIONS="--require ./file-polyfill.js"
         hopp --version
 
     - name: Run Hoppscotch Tests
       working-directory: chabbi_project/auth
       run: |
         echo "Running Hoppscotch test from auth.json using ../env.json"
+        # Use the same File polyfill for the test execution
+        export NODE_OPTIONS="--require $(pwd)/../../file-polyfill.js"
         hopp test auth.json -e ../env.json || exit 1
 
     - name: Echo Success
