@@ -34,15 +34,27 @@ jobs:
         # Install Hoppscotch CLI
         npm install -g @hoppscotch/cli
         
+    - name: Set up polyfill for File object
+      run: |
+        # Create a proper Node.js polyfill script with error handling
+        cat > ./file-polyfill.js << 'EOF'
+        try {
+          const { File } = require('formdata-node');
+          global.File = File;
+          console.log('Successfully loaded File polyfill');
+        } catch (error) {
+          console.error('Failed to load File polyfill:', error);
+          process.exit(1);
+        }
+        EOF
+        
     - name: Run Hoppscotch tests
       id: run_tests
       continue-on-error: true  # Continue workflow even if tests fail due to status code assertions
       run: |
         cd chabbi_project/auth
-        # Create the polyfill file directly in the auth directory
-        echo "global.File = require('formdata-node').File;" > file-polyfill.js
         # Use node with the polyfill script before running hopp
-        node -r ./file-polyfill.js $(which hopp) test auth.json -e ../env.json
+        node -r ../../file-polyfill.js $(which hopp) test auth.json -e ../env.json
         # Store test result to outputs using the correct syntax
         echo "test_exit_code=$?" >> $GITHUB_OUTPUT
         
@@ -51,10 +63,8 @@ jobs:
       continue-on-error: true  # Prevent report generation from failing the workflow
       run: |
         cd chabbi_project/auth
-        # Create the polyfill file directly in the auth directory if it doesn't exist
-        [ -f file-polyfill.js ] || echo "global.File = require('formdata-node').File;" > file-polyfill.js
         # Use node with the polyfill script before running hopp
-        node -r ./file-polyfill.js $(which hopp) test auth.json -e ../env.json --reporter-junit test-results.xml
+        node -r ../../file-polyfill.js $(which hopp) test auth.json -e ../env.json --reporter-junit test-results.xml
         
     - name: Upload test results
       if: always()
