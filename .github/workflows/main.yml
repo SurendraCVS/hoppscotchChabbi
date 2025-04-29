@@ -31,22 +31,42 @@ jobs:
       run: |
         # Install Hoppscotch CLI globally
         npm install -g @hoppscotch/cli
-        # Install formdata-node locally in the project directory
-        npm init -y
-        npm install formdata-node
         
     - name: Set up polyfill for File object
       run: |
-        # Create a proper Node.js polyfill script with error handling
+        # Create a self-contained polyfill script without external dependencies
         cat > ./file-polyfill.js << 'EOF'
-        try {
-          const { File } = require('./node_modules/formdata-node');
-          global.File = File;
-          console.log('Successfully loaded File polyfill');
-        } catch (error) {
-          console.error('Failed to load File polyfill:', error);
-          process.exit(1);
+        // Minimal File class implementation for Node.js
+        class File {
+          constructor(fileBits, fileName, options = {}) {
+            this.name = fileName;
+            this.lastModified = options.lastModified || Date.now();
+            this.type = options.type || '';
+            this._buffer = Buffer.concat(
+              Array.isArray(fileBits) 
+                ? fileBits.map(bit => Buffer.from(bit)) 
+                : [Buffer.from(fileBits)]
+            );
+          }
+          
+          get size() {
+            return this._buffer.length;
+          }
+          
+          slice(start, end, contentType) {
+            return new File(
+              [this._buffer.slice(start, end)],
+              this.name,
+              { type: contentType || this.type, lastModified: this.lastModified }
+            );
+          }
+          
+          // Add any other methods needed by Hoppscotch
         }
+        
+        // Add to global scope
+        global.File = File;
+        console.log('Successfully loaded File polyfill');
         EOF
         
     - name: Run Hoppscotch tests
