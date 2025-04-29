@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuites tests="2" failures="0" errors="0" time="0.043">
-  <testsuite name="auth/login" time="0.02" timestamp="2025-04-29T06:30:30.923Z" tests="1" failures="0" errors="0">
-    <testcase name="Login status code is 200 - Expected '200' to be '200'" classname="auth/login"/>
-  </testsuite>
-  <testsuite name="auth/logout" time="0.023" timestamp="2025-04-29T06:30:30.930Z" tests="1" failures="0" errors="0">
-    <testcase name="Logout status code is 200 - Expected '200' to be '200'" classname="auth/logout"/>
-  </testsuite>
-</testsuites>
