@@ -36,6 +36,12 @@ jobs:
       run: |
         # Create a self-contained polyfill script without external dependencies
         cat > ./file-polyfill.js << 'EOF'
+        // Check if the globals already exist
+        if (typeof global.File !== 'undefined' && typeof global.Blob !== 'undefined') {
+          console.log('File and Blob globals already exist, skipping polyfill');
+          return;
+        }
+        
         // Minimal Blob class implementation for Node.js
         class Blob {
           constructor(blobParts = [], options = {}) {
@@ -68,9 +74,10 @@ jobs:
           }
         }
         
-        // Add to global scope
-        global.Blob = Blob;
-        global.File = File;
+        // Add to global scope if not already defined
+        if (typeof global.Blob === 'undefined') global.Blob = Blob;
+        if (typeof global.File === 'undefined') global.File = File;
+        
         console.log('Successfully loaded Blob and File polyfills');
         EOF
         
