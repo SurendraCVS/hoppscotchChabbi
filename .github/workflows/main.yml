@@ -2,9 +2,9 @@ name: Hoppscotch API Tests
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
   workflow_dispatch:  # Allows manual triggering
 
 jobs:
@@ -26,27 +26,24 @@ jobs:
     - name: Run Auth Tests
       run: |
         echo "Running Auth Tests"
-        hopp test ./chabbi_project/auth/auth.json -e ./chabbi_project/env.json --reporter junit --junit-export test-results.xml
+        hopp test ./chabbi_project/auth/auth.json -e ./chabbi_project/env.json --reporter json > test-results.json
+        echo "Test execution completed"
         
-    - name: Check Test Results
+    - name: Display Test Results Summary
+      if: always()
       run: |
-        ls -la *.xml || echo "No XML files found"
-        if [ -f "test-results.xml" ]; then
-          echo "Test results file found"
+        echo "=== Test Results Summary ==="
+        if [ -f "test-results.json" ]; then
+          echo "Test results file created successfully"
+          cat test-results.json | grep -E "passed|failed|total" || echo "No test results found in JSON"
         else
-          echo "Creating empty test results file to prevent upload errors"
-          echo '<?xml version="1.0" encoding="UTF-8"?><testsuites />' > test-results.xml
+          echo "No test results file found"
         fi
-      
+    
     - name: Upload Test Results
-      uses: actions/upload-artifact@v2
-      if: always()  # Upload test results even if tests fail
+      if: always()
+      uses: actions/upload-artifact@v3
       with:
         name: test-results
-        path: test-results.xml
-        
-    - name: Publish Test Results
-      uses: EnricoMi/publish-unit-test-result-action@v1
-      if: always()
-      with:
-        files: test-results.xml
+        path: test-results.json
+        retention-days: 7
