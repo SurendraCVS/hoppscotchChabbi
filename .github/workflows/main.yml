@@ -20,13 +20,16 @@ jobs:
       with:
         node-version: '18'
         
-    - name: Install Hoppscotch CLI
-      run: npm install -g @hoppscotch/cli
+    - name: Install Hoppscotch CLI and Dependencies
+      run: |
+        npm install -g @hoppscotch/cli
+        npm install -g formdata-node undici
+        export NODE_OPTIONS="--experimental-global-webcrypto --no-warnings"
     
     - name: Run Auth Tests
       run: |
         echo "Running Auth Tests"
-        hopp test ./chabbi_project/auth/auth.json -e ./chabbi_project/env.json --reporter json > test-results.json
+        NODE_OPTIONS="--experimental-global-webcrypto --no-warnings" hopp test ./chabbi_project/auth/auth.json -e ./chabbi_project/env.json --reporter json > test-results.json
         echo "Test execution completed"
         
     - name: Display Test Results Summary
