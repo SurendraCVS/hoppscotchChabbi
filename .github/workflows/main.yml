@@ -52,4 +52,8 @@ jobs:
       if: steps.run_tests.outputs.test_exit_code != '0'
       run: |
         echo "::warning::Tests failed with strict assertions. API endpoints are not returning 200 status codes."
+<<<<<<< HEAD
         echo "Check test results for details on the failing assertions." 
+=======
+        echo "Check test results for details on the failing assertions." 
+>>>>>>> c1a6e95 (updated yml file)
