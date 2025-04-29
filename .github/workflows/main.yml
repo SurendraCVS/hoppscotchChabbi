@@ -26,17 +26,27 @@ jobs:
     - name: Run Auth Tests
       run: |
         echo "Running Auth Tests"
-        hopp test ./chabbi_project/auth/auth.json -e ./chabbi_project/env.json --reporter junit
+        hopp test ./chabbi_project/auth/auth.json -e ./chabbi_project/env.json --reporter junit --junit-export test-results.xml
+        
+    - name: Check Test Results
+      run: |
+        ls -la *.xml || echo "No XML files found"
+        if [ -f "test-results.xml" ]; then
+          echo "Test results file found"
+        else
+          echo "Creating empty test results file to prevent upload errors"
+          echo '<?xml version="1.0" encoding="UTF-8"?><testsuites />' > test-results.xml
+        fi
       
     - name: Upload Test Results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2
       if: always()  # Upload test results even if tests fail
       with:
         name: test-results
-        path: ./*.xml
+        path: test-results.xml
         
     - name: Publish Test Results
-      uses: EnricoMi/publish-unit-test-result-action@v2
+      uses: EnricoMi/publish-unit-test-result-action@v1
       if: always()
       with:
-        files: ./*.xml
+        files: test-results.xml
