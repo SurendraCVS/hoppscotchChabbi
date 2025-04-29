@@ -1,101 +1,45 @@
-# Hoppscotch API Test Project
+# Hoppscotch API Tests
 
-This project contains API tests for the Chaabi Dev API using Hoppscotch CLI.
+This repository contains Hoppscotch API tests for the Chaabi application.
 
-## Project Structure
+## Test Structure
 
-- `chabbi_project/` - Main project directory
-  - `auth/` - Authentication API tests
-    - `auth.json` - Hoppscotch collection file with login/logout tests
-    - `test-results.xml` - JUnit test results
-  - `env.json` - Environment variables for API endpoints
-
-## GitHub Actions Workflow
-
-This project includes a GitHub Actions workflow that:
-1. Runs Hoppscotch API tests against the Chaabi Dev API
-2. Generates JUnit test reports
-3. Uploads test results as artifacts
-
-The workflow uses a custom polyfill implementation for the `File` and `Blob` objects that are required by Hoppscotch CLI but are not available in the Node.js environment.
+- `chabbi_project/auth/auth.json` - Contains API tests for authentication (login/logout)
+- `chabbi_project/env.json` - Environment configuration with base URLs and endpoints
 
 ## Running Tests Locally
 
 To run the tests locally, follow these steps:
 
-1. Install Hoppscotch CLI:
+1. Install the Hoppscotch CLI
    ```
    npm install -g @hoppscotch/cli
    ```
 
-2. Navigate to the project directory:
+2. Run the authentication tests
    ```
-   cd chabbi_project
-   ```
-
-3. Run the tests using our custom runner script:
-   ```
-   node run-tests.js
+   hopp test ./chabbi_project/auth/auth.json -e ./chabbi_project/env.json
    ```
 
-4. Generate JUnit test report:
+3. Generate JUnit XML report
    ```
-   node run-tests.js --junit
+   hopp test ./chabbi_project/auth/auth.json -e ./chabbi_project/env.json --reporter junit
    ```
 
-This script automatically handles:
-- Adding the required File and Blob polyfills for Node.js
-- Converting the environment file to the correct format
-- Running the tests and generating reports
+## CI/CD Pipeline
 
-## Implementation Details
+Tests are automatically run in the CI/CD pipeline via GitHub Actions. The workflow is defined in `.github/workflows/main.yml`.
 
-The `run-tests.js` script:
-1. Provides polyfills for `File` and `Blob` objects
-2. Converts the environment format if needed
-3. Creates a temporary environment file in the format expected by Hoppscotch CLI
-4. Runs the tests using the Hoppscotch CLI
-5. Cleans up temporary files
+The pipeline:
+1. Runs on push to main/master branch, on pull requests, or can be manually triggered
+2. Sets up Node.js environment and installs Hoppscotch CLI
+3. Runs the auth.json tests using the credentials already defined in the test file
+4. Generates JUnit test reports
+5. Uploads and publishes test results as artifacts in GitHub
 
-## Troubleshooting
+## Adding New Tests
 
-If you encounter issues running the tests:
-
-1. Make sure Hoppscotch CLI is installed: `npm install -g @hoppscotch/cli`
-2. Check that your collection and environment files match the formats shown below
-3. Try running with verbose logging: `DEBUG=* node run-tests.js`
-
-## Hoppscotch File Formats
-
-The project uses the following formats:
-
-### Collection Format (auth.json)
-```json
-{
-  "v": 2,
-  "name": "collection-name",
-  "folders": [],
-  "requests": [
-    {
-      "v": 2,
-      "endpoint": "<<apiBaseURL>><<endpoint>>",
-      "name": "request-name",
-      "method": "GET",
-      // ... other properties
-    }
-  ]
-}
-```
-
-### Environment Format (env.json)
-```json
-{
-  "name": "environment-name",
-  "variables": {
-    "key1": "value1",
-    "key2": "value2"
-  }
-}
-```
-
-Make sure your files match these formats exactly as Hoppscotch CLI is quite strict about the format. 
+To add new tests:
+1. Create a new JSON file in the appropriate directory following the Hoppscotch format
+2. Add your API requests with test scripts
+3. Update the CI/CD pipeline in main.yml if needed to include the new test file

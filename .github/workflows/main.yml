@@ -1,114 +1,42 @@
 name: Hoppscotch API Tests
 
-# Updated workflow file to fix issues
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
   workflow_dispatch:  # Allows manual triggering
 
-# Add explicit permissions
-permissions:
-  contents: read
-  actions: write
-  checks: write
-
 jobs:
-  hoppscotch-tests:
+  test:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v3
       
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
       with:
         node-version: '18'
         
-    - name: Install Hoppscotch CLI and required dependencies
+    - name: Install Hoppscotch CLI
+      run: npm install -g @hoppscotch/cli
+    
+    - name: Run Auth Tests
       run: |
-        # Install Hoppscotch CLI globally
-        npm install -g @hoppscotch/cli
-        
-    - name: Set up polyfill for File object
-      run: |
-        # Create a self-contained polyfill script without external dependencies
-        cat > ./file-polyfill.js << 'EOF'
-        // Check if the globals already exist
-        if (typeof global.File !== 'undefined' && typeof global.Blob !== 'undefined') {
-          console.log('File and Blob globals already exist, skipping polyfill');
-          return;
-        }
-        
-        // Minimal Blob class implementation for Node.js
-        class Blob {
-          constructor(blobParts = [], options = {}) {
-            this.type = options.type || '';
-            this._buffer = Buffer.concat(
-              Array.isArray(blobParts) 
-                ? blobParts.map(bit => bit instanceof Buffer ? bit : Buffer.from(bit)) 
-                : [Buffer.from(blobParts)]
-            );
-          }
-          
-          get size() {
-            return this._buffer.length;
-          }
-          
-          slice(start, end, contentType) {
-            return new Blob(
-              [this._buffer.slice(start, end)],
-              { type: contentType || this.type }
-            );
-          }
-        }
-        
-        // Minimal File class implementation for Node.js
-        class File extends Blob {
-          constructor(fileBits, fileName, options = {}) {
-            super(fileBits, options);
-            this.name = fileName;
-            this.lastModified = options.lastModified || Date.now();
-          }
-        }
-        
-        // Add to global scope if not already defined
-        if (typeof global.Blob === 'undefined') global.Blob = Blob;
-        if (typeof global.File === 'undefined') global.File = File;
-        
-        console.log('Successfully loaded Blob and File polyfills');
-        EOF
-        
-    - name: Run Hoppscotch tests
-      id: run_tests
-      continue-on-error: true  # Continue workflow even if tests fail due to status code assertions
-      run: |
-        cd chabbi_project
-        # Use our custom script that includes polyfills and handles environment format
-        node run-tests.js
-        # Store test result to outputs using the correct syntax
-        echo "test_exit_code=$?" >> $GITHUB_OUTPUT
-        
-    - name: Generate JUnit report
-      if: always()  # Run even if previous step fails
-      continue-on-error: true  # Prevent report generation from failing the workflow
-      run: |
-        cd chabbi_project
-        # Use our custom script with JUnit report generation
-        node run-tests.js --junit
-        
-    - name: Upload test results
-      if: always()
-      uses: actions/upload-artifact@v4
+        echo "Running Auth Tests"
+        hopp test ./chabbi_project/auth/auth.json -e ./chabbi_project/env.json --reporter junit
+      
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v3
+      if: always()  # Upload test results even if tests fail
       with:
         name: test-results
-        path: chabbi_project/auth/test-results.xml
-        retention-days: 7
+        path: ./*.xml
         
-    - name: Check test results
-      if: steps.run_tests.outputs.test_exit_code != '0'
-      run: |
-        echo "::warning::Tests failed with strict assertions. API endpoints are not returning 200 status codes."
-        echo "Check test results for details on the failing assertions." 
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: ./*.xml
