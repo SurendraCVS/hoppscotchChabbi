@@ -36,16 +36,14 @@ jobs:
       run: |
         # Create a self-contained polyfill script without external dependencies
         cat > ./file-polyfill.js << 'EOF'
-        // Minimal File class implementation for Node.js
-        class File {
-          constructor(fileBits, fileName, options = {}) {
-            this.name = fileName;
-            this.lastModified = options.lastModified || Date.now();
+        // Minimal Blob class implementation for Node.js
+        class Blob {
+          constructor(blobParts = [], options = {}) {
             this.type = options.type || '';
             this._buffer = Buffer.concat(
-              Array.isArray(fileBits) 
-                ? fileBits.map(bit => Buffer.from(bit)) 
-                : [Buffer.from(fileBits)]
+              Array.isArray(blobParts) 
+                ? blobParts.map(bit => bit instanceof Buffer ? bit : Buffer.from(bit)) 
+                : [Buffer.from(blobParts)]
             );
           }
           
@@ -54,19 +52,26 @@ jobs:
           }
           
           slice(start, end, contentType) {
-            return new File(
+            return new Blob(
               [this._buffer.slice(start, end)],
-              this.name,
-              { type: contentType || this.type, lastModified: this.lastModified }
+              { type: contentType || this.type }
             );
           }
-          
-          // Add any other methods needed by Hoppscotch
+        }
+        
+        // Minimal File class implementation for Node.js
+        class File extends Blob {
+          constructor(fileBits, fileName, options = {}) {
+            super(fileBits, options);
+            this.name = fileName;
+            this.lastModified = options.lastModified || Date.now();
+          }
         }
         
         // Add to global scope
+        global.Blob = Blob;
         global.File = File;
-        console.log('Successfully loaded File polyfill');
+        console.log('Successfully loaded Blob and File polyfills');
         EOF
         
     - name: Run Hoppscotch tests
