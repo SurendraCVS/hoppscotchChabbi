@@ -34,20 +34,42 @@ jobs:
 
     - name: Install Hoppscotch CLI
       run: |
-        echo "Installing Hoppscotch CLI v0.17.1 (known compatible version)"
-        npm install -g @hoppscotch/cli@0.17.1
-        # Set up global File object needed by Hoppscotch
-        echo 'globalThis.File = class File {};' > file-polyfill.js
-        export NODE_OPTIONS="--require ./file-polyfill.js"
-        hopp --version
+        echo "Installing Hoppscotch CLI v0.20.3"
+        npm install -g @hoppscotch/cli@0.20.3
+        
+        # Create File polyfill
+        cat > file-polyfill.js << 'EOF'
+        if (typeof File === 'undefined') {
+          global.File = class File {
+            constructor(bits, name, options = {}) {
+              this.bits = bits;
+              this.name = name;
+              this.options = options;
+            }
+          };
+          global.FormData = class FormData {
+            constructor() {
+              this.data = {};
+            }
+            append(key, value) {
+              this.data[key] = value;
+            }
+          };
+          global.Blob = class Blob {};
+        }
+        EOF
+        
+        # Try running with the polyfill
+        NODE_OPTIONS="--require $(pwd)/file-polyfill.js" hopp --version
 
     - name: Run Hoppscotch Tests
       working-directory: chabbi_project/auth
       run: |
-        echo "Running Hoppscotch test from auth.json using ../env.json"
-        # Use the same File polyfill for the test execution
+        echo "Running Hoppscotch tests with version 0.20.3"
+        
+        # Use the polyfill for test execution
         export NODE_OPTIONS="--require $(pwd)/../../file-polyfill.js"
-        hopp test auth.json -e ../env.json || exit 1
+        hopp test auth.json -e ../env.json
 
     - name: Echo Success
       run: echo "CI/CD pipeline completed successfully"
