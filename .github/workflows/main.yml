@@ -29,17 +29,18 @@ jobs:
         
     - name: Install Hoppscotch CLI and required dependencies
       run: |
-        # Install formdata-node to provide File polyfill
-        npm install -g formdata-node
-        # Install Hoppscotch CLI
+        # Install Hoppscotch CLI globally
         npm install -g @hoppscotch/cli
+        # Install formdata-node locally in the project directory
+        npm init -y
+        npm install formdata-node
         
     - name: Set up polyfill for File object
       run: |
         # Create a proper Node.js polyfill script with error handling
         cat > ./file-polyfill.js << 'EOF'
         try {
-          const { File } = require('formdata-node');
+          const { File } = require('./node_modules/formdata-node');
           global.File = File;
           console.log('Successfully loaded File polyfill');
         } catch (error) {
