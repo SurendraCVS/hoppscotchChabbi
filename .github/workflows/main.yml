@@ -41,13 +41,13 @@ jobs:
         EOF
         
         echo "Created simplified environment file:"
-        cat chabbi_project/env_simple.json
+        cat chabbi_project/env.json
 
     - name: Run Hoppscotch Tests
       working-directory: chabbi_project/auth
       run: |
         echo "Running Hoppscotch tests with v0.11.1"
-        hopp test auth.json -e ../env_simple.json
+        hopp test auth.json -e ../env.json
         
         echo "Test file content:"
         cat auth.json
