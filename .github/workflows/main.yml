@@ -20,138 +20,24 @@ jobs:
       with:
         node-version: '18'
 
-    - name: Install Hoppscotch CLI v0.11.1
+    - name: Install Hoppscotch CLI v0.21.0
       run: |
-        echo "Installing Hoppscotch CLI v0.11.1 (compatible with Node.js v18)"
-        npm install -g @hoppscotch/cli@0.11.1
+        echo "Installing Hoppscotch CLI v0.21.0 (compatible with Node.js v18)"
+        npm install -g @hoppscotch/cli@0.21.0
         
         # Verify installation
         hopp -v
 
-    - name: Create Compatible Environment File
-      run: |
-        mkdir -p chabbi_project
-        echo "Creating formatted environment file for Hoppscotch CLI v0.11.1"
-        cat > chabbi_project/env.json << 'EOF'
-        {
-          "variables": [
-            {
-              "key": "baseURL",
-              "value": "https://chaabi-dev.ipxp.in"
-            },
-            {
-              "key": "apiBaseURL",
-              "value": "https://chaabi-dev.ipxp.in/api"
-            },
-            {
-              "key": "loginEndpoint",
-              "value": "/login/"
-            },
-            {
-              "key": "logoutEndpoint",
-              "value": "/logout/"
-            }
-          ]
-        }
-        EOF
-        echo "Environment file created:"
-        cat chabbi_project/env.json
-
-    - name: Create Auth Directory and File
-      run: |
-        mkdir -p chabbi_project/auth
-        echo "Creating auth file"
-        cat > chabbi_project/auth/auth.json << 'EOF'
-        {
-          "v": 6,
-          "name": "auth",
-          "folders": [],
-          "requests": [
-            {
-              "v": "11",
-              "name": "login",
-              "method": "POST",
-              "endpoint": "<<apiBaseURL>><<loginEndpoint>>",
-              "params": [],
-              "headers": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json",
-                  "active": true,
-                  "description": ""
-                }
-              ],
-              "preRequestScript": "// For the initial login, we don't need a CSRF token as the server will provide one",
-              "testScript": "// Strict assertion that requires status code 200 to pass\npw.test(\"Login status code is 200\", () => {\n  pw.expect(pw.response.status).toBe(200);\n});\n\n// Extract CSRF token from response cookies or headers\nlet csrfToken = null;\n\n// Check for CSRF token in 'set-cookie' header\nconst setCookie = pw.response.headers['set-cookie'];\nif (setCookie) {\n  const csrfMatch = setCookie.match(/csrftoken=([^;]+)/);\n  if (csrfMatch && csrfMatch[1]) {\n    csrfToken = csrfMatch[1];\n    console.log('Extracted CSRF token from set-cookie header: ' + csrfToken);\n  }\n}\n\n// Check for CSRF token in X-CSRFToken header\nif (!csrfToken && pw.response.headers['X-CSRFToken']) {\n  csrfToken = pw.response.headers['X-CSRFToken'];\n  console.log('Extracted CSRF token from X-CSRFToken header: ' + csrfToken);\n}\n\n// Check for CSRF token in response body\nif (!csrfToken && pw.response.body) {\n  try {\n    const body = JSON.parse(pw.response.body);\n    if (body.csrf_token) {\n      csrfToken = body.csrf_token;\n      console.log('Extracted CSRF token from response body: ' + csrfToken);\n    }\n  } catch (e) {\n    console.log('Could not parse response body as JSON');\n  }\n}\n\n// Save the token to environment for this test run only\nif (csrfToken) {\n  pw.env.set('csrfToken', csrfToken);\n  console.log('CSRF Token from login response saved for logout request: ' + csrfToken);\n}\n\n// Extract auth token from response\ntry {\n  const body = JSON.parse(pw.response.body);\n  if (body.data && body.data.token) {\n    pw.env.set('authToken', body.data.token);\n    console.log('Auth token extracted and saved: ' + body.data.token);\n  }\n} catch (e) {\n  console.log('Could not extract auth token from response');\n}",
-              "auth": {
-                "authType": "none",
-                "authActive": true
-              },
-              "body": {
-                "contentType": "application/json",
-                "body": "{\n  \"username\": \"1010101010\",\n  \"password\": \"Admin@123\"\n}\n"
-              },
-              "requestVariables": [],
-              "responses": {}
-            },
-            {
-              "v": "11",
-              "name": "logout",
-              "method": "POST",
-              "endpoint": "<<apiBaseURL>><<logoutEndpoint>>",
-              "params": [],
-              "headers": [
-                {
-                  "key": "X-CSRFToken",
-                  "value": "<<csrfToken>>",
-                  "active": true,
-                  "description": ""
-                },
-                {
-                  "key": "Content-Type",
-                  "value": "application/json",
-                  "active": true,
-                  "description": ""
-                },
-                {
-                  "key": "Authorization",
-                  "value": "Token <<authToken>>",
-                  "active": true,
-                  "description": ""
-                }
-              ],
-              "preRequestScript": "// Verify that we have the CSRF token extracted from login response\nif (pw.env.get('csrfToken')) {\n  console.log('Using CSRF Token extracted from login response: ' + pw.env.get('csrfToken'));\n} else {\n  console.log('Warning: No CSRF Token found from login response. This may cause the logout to fail.');\n}\n\n// Verify we have the auth token from the login\nif (pw.env.get('authToken')) {\n  console.log('Using Auth Token from login: ' + pw.env.get('authToken'));\n} else {\n  console.log('Warning: No Auth Token found from login response');\n  // Use a default token for testing if needed\n  pw.env.set('authToken', '3924e259c5080179d2a5e15b9ecb712f35385562');\n}",
-              "testScript": "// Strict assertion that requires status code 200 to pass\npw.test(\"Logout status code is 200\", () => {\n  pw.expect(pw.response.status).toBe(200);\n});",
-              "auth": {
-                "authType": "none",
-                "authActive": true
-              },
-              "body": {
-                "contentType": "application/json",
-                "body": "{}"
-              },
-              "requestVariables": [],
-              "responses": {}
-            }
-          ],
-          "auth": {
-            "authActive": true,
-            "authType": "inherit"
-          },
-          "headers": [],
-          "_ref_id": "coll_ma0qhtt3_69954685-32eb-468f-8eb4-03a822cb8ffc"
-        }
-        EOF
-        echo "Auth file created"
-
     - name: Run Hoppscotch Tests
-      working-directory: chabbi_project/auth
       run: |
-        echo "Running Hoppscotch tests with v0.11.1"
-        hopp test auth.json -e ../env.json
+        echo "Running Hoppscotch tests with v0.21.0"
+        cd chabbi_project/auth
         
         echo "Test file content:"
         cat auth.json
+        
+        echo "Running tests:"
+        hopp test auth.json -e ../env.json
 
     - name: Echo Success
       run: echo "CI/CD pipeline completed successfully"
