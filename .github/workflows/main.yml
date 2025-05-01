@@ -33,9 +33,6 @@ jobs:
         echo "Running Hoppscotch tests with v0.21.0"
         cd chabbi_project/auth
         
-        echo "Test file content:"
-        cat auth.json
-        
         echo "Running tests:"
         hopp test auth.json -e ../env.json
 
