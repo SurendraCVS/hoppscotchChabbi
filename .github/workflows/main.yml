@@ -43,7 +43,7 @@ jobs:
         echo "Running Hoppscotch tests with v0.21.0"
         cd chabbi_project/auth
         echo "Running tests with .env file:"
-        hopp test auth.json -e ../.env
+        hopp test auth.json
 
     - name: Echo Success
       run: echo "CI/CD pipeline completed successfully"
