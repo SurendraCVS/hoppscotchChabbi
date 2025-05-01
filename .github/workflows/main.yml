@@ -12,18 +12,41 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'
-          cache: 'npm'
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
 
-      - name: Install Hoppscotch CLI
-        run: npm install -g @hoppscotch/cli
+    - name: Install Hoppscotch CLI v0.11.1
+      run: |
+        echo "Installing Hoppscotch CLI v0.11.1 (compatible with Node.js v18)"
+        npm install -g @hoppscotch/cli@0.11.1
+        
+        # Verify installation
+        hopp -v
 
-      - name: Run Hoppscotch API tests
-        run: |
-          hopp test auth/auth.json -e env.json
+    - name: Verify Environment File
+      run: |
+        echo "Verifying environment file exists at chabbi_project/env.json"
+        if [ -f chabbi_project/env.json ]; then
+          echo "Environment file found:"
+          cat chabbi_project/env.json
+        else
+          echo "ERROR: Environment file not found at chabbi_project/env.json"
+          exit 1
+        fi
+
+    - name: Run Hoppscotch Tests
+      working-directory: chabbi_project/auth
+      run: |
+        echo "Running Hoppscotch tests with v0.11.1"
+        hopp test auth.json -e ../env.json
+        
+        echo "Test file content:"
+        cat auth.json
+
+    - name: Echo Success
+      run: echo "CI/CD pipeline completed successfully"
