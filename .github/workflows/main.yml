@@ -28,13 +28,22 @@ jobs:
         # Verify installation
         hopp -v
 
+    - name: Verify Environment File
+      run: |
+        echo "Verifying .env file exists"
+        if [ -f chabbi_project/.env ]; then
+          echo ".env file found"
+        else
+          echo "ERROR: .env file not found at chabbi_project/.env"
+          exit 1
+        fi
+
     - name: Run Hoppscotch Tests
       run: |
         echo "Running Hoppscotch tests with v0.21.0"
         cd chabbi_project/auth
-        
-        echo "Running tests:"
-        hopp test auth.json -e ../env.json
+        echo "Running tests with .env file:"
+        hopp test auth.json -e ../.env
 
     - name: Echo Success
       run: echo "CI/CD pipeline completed successfully"
