@@ -10,40 +10,18 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Setup Node.js v20
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20'
-
-    - name: Install Hoppscotch CLI v0.21.0
-      run: |
-        echo "Installing Hoppscotch CLI v0.21.0 (compatible with Node.js v20)"
-        npm install -g @hoppscotch/cli@0.21.0
-        
-        # Verify installation
-        hopp -v
-
-    - name: Verify Environment File
-      run: |
-        echo "Verifying .env file exists"
-        if [ -f chabbi_project/.env ]; then
-          echo ".env file found"
-        else
-          echo "ERROR: .env file not found at chabbi_project/.env"
-          exit 1
-        fi
-
-    - name: Run Hoppscotch Tests
-      run: |
-        echo "Running Hoppscotch tests with v0.21.0"
-        cd chabbi_project/auth
-        echo "Running tests with .env file:"
-        hopp test auth.json
-
-    - name: Echo Success
-      run: echo "CI/CD pipeline completed successfully"
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install Hoppscotch CLI
+        run: npm install -g @hoppscotch/cli
+      
+      - name: Run API Tests
+        run: |
+          cd chabbi_project
+          hopp test auth/auth.json -e temp_env.json 
