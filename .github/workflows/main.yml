@@ -28,20 +28,41 @@ jobs:
         # Verify installation
         hopp -v
 
-    - name: Verify Environment File
+    - name: Create Compatible Environment File
       run: |
-        echo "Verifying environment file exists at chabbi_project/env.json"
-        if [ -f chabbi_project/env.json ]; then
-          echo "Environment file found:"
-          cat chabbi_project/env.json
-        else
-          echo "ERROR: Environment file not found at chabbi_project/env.json"
-          exit 1
-        fi
+        mkdir -p chabbi_project
+        echo "Creating formatted environment file for Hoppscotch CLI v0.11.1"
+        cat > chabbi_project/env.json << 'EOF'
+{
+  "variables": [
+    {
+      "key": "baseURL",
+      "value": "https://chaabi-dev.ipxp.in"
+    },
+    {
+      "key": "apiBaseURL",
+      "value": "https://chaabi-dev.ipxp.in/api"
+    },
+    {
+      "key": "loginEndpoint",
+      "value": "/login/"
+    },
+    {
+      "key": "logoutEndpoint",
+      "value": "/logout/"
+    }
+  ]
+}
+EOF
+        echo "Environment file created:"
+        cat chabbi_project/env.json
 
     - name: Run Hoppscotch Tests
       working-directory: chabbi_project/auth
       run: |
+        # Make sure auth directory exists
+        mkdir -p chabbi_project/auth
+        
         echo "Running Hoppscotch tests with v0.11.1"
         hopp test auth.json -e ../env.json
         
