@@ -1,0 +1,25 @@
+{
+  "name": "chabbi-environment",
+  "variables": [
+    {
+      "key": "API_BASE_URL",
+      "value": "https://chaabi-dev.ipxp.in/api"
+    },
+    {
+      "key": "LOGIN_ENDPOINT",
+      "value": "/login/"
+    },
+    {
+      "key": "LOGOUT_ENDPOINT",
+      "value": "/logout/"
+    },
+    {
+      "key": "csrfToken",
+      "value": ""
+    },
+    {
+      "key": "authToken",
+      "value": ""
+    }
+  ]
+} 
