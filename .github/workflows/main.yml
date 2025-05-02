@@ -7,6 +7,12 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  checks: write
+  issues: read
+  pull-requests: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -54,6 +60,12 @@ jobs:
         # Check if JUnit report was generated
         echo "Checking generated JUnit report file:"
         ls -la test-results/
+        
+        # Examine JUnit XML structure for debugging
+        if [ -f test-results/junit-report.xml ]; then
+          echo "First 30 lines of JUnit XML:"
+          head -n 30 test-results/junit-report.xml
+        fi
         
         # Report test status
         if [ $TEST_EXIT_CODE -ne 0 ]; then
