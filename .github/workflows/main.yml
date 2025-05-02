@@ -98,18 +98,16 @@ jobs:
           echo "HTML report generated successfully at _site/test-report.html"
           
           # Create an index.html file that automatically redirects to test-report.html
-          cat > _site/index.html << 'EOL'
-<!DOCTYPE html>
+          echo '<!DOCTYPE html>
 <html>
   <head>
-    <meta http-equiv="refresh" content="0; url='./test-report.html'" />
+    <meta http-equiv="refresh" content="0; url='"'"'./test-report.html'"'"'" />
     <title>Redirecting to Test Report</title>
   </head>
   <body>
     <p>Please wait while you are being redirected to the <a href="./test-report.html">test report</a>.</p>
   </body>
-</html>
-EOL
+</html>' > _site/index.html
           
           # Add .nojekyll file to prevent GitHub Pages from processing with Jekyll
           touch _site/.nojekyll
@@ -119,18 +117,16 @@ EOL
           echo "<html><body><h1>Error</h1><p>JUnit XML report was not found.</p></body></html>" > _site/test-report.html
           
           # Create an index.html file that redirects to the error page
-          cat > _site/index.html << 'EOL'
-<!DOCTYPE html>
+          echo '<!DOCTYPE html>
 <html>
   <head>
-    <meta http-equiv="refresh" content="0; url='./test-report.html'" />
+    <meta http-equiv="refresh" content="0; url='"'"'./test-report.html'"'"'" />
     <title>Redirecting to Test Report</title>
   </head>
   <body>
     <p>Please wait while you are being redirected to the <a href="./test-report.html">test report</a>.</p>
   </body>
-</html>
-EOL
+</html>' > _site/index.html
           
           touch _site/.nojekyll
         fi
