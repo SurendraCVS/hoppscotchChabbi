@@ -124,3 +124,24 @@ jobs:
       uses: actions/deploy-pages@v4
       with:
         artifact_name: html-test-reports
+        
+    # Display the GitHub Pages URL for easy sharing
+    - name: Display GitHub Pages URL
+      if: always() && github.event_name != 'pull_request'
+      run: |
+        # Display GitHub Pages URL prominently in the logs
+        echo "==================================================================================="
+        echo "🚀 HTML TEST REPORTS PUBLISHED TO GITHUB PAGES"
+        echo "==================================================================================="
+        echo ""
+        echo "👉 Report URL: ${{ steps.deployment.outputs.page_url }}"
+        echo ""
+        echo "This URL can be easily shared with team members to view the HTML test reports."
+        echo "==================================================================================="
+        
+        # Make it permanently available in job summary
+        echo "## 🔗 Test Report Link" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### [View HTML Test Reports on GitHub Pages](${{ steps.deployment.outputs.page_url }})" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "This link can be shared with anyone who needs to view the test results." >> $GITHUB_STEP_SUMMARY
