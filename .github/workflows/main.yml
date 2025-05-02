@@ -90,11 +90,9 @@ jobs:
           touch _site/.nojekyll
           
           # Create a simple redirect page
-          cat > _site/README.md << 'EOL'
-# Test Reports
-
-Please see the HTML test reports [here](./index.html).
-EOL
+          echo "# Test Reports" > _site/README.md
+          echo "" >> _site/README.md
+          echo "Please see the HTML test reports [here](./index.html)." >> _site/README.md
           
           echo "Added necessary files for GitHub Pages"
         else
