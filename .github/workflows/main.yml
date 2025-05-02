@@ -132,7 +132,7 @@ EOL
         git commit -m "Deploy HTML test reports"
         
         # Push to gh-pages branch, force push to reset the branch each time
-        git push --force "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:gh-pages
+        git push --force "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:gh-pages
         
         echo "Pushed HTML test reports to gh-pages branch"
         
