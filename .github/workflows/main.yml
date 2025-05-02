@@ -114,25 +114,7 @@ jobs:
         else
           echo "ERROR: JUnit XML file not found, cannot generate HTML report"
           # Create a simple error HTML file using Python
-          cat > chabbi_project/test-results/html/error.html << EOF
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Error in Test Report Generation</title>
-    <style>
-        body { font-family: sans-serif; margin: 40px; }
-        .error { color: red; background: #ffeeee; padding: 20px; border-radius: 5px; }
-    </style>
-</head>
-<body>
-    <h1>Error Generating Test Report</h1>
-    <div class="error">
-        <p><strong>An error occurred while generating the test report:</strong></p>
-        <p>JUnit XML report was not found.</p>
-    </div>
-</body>
-</html>
-EOF
+          echo '<!DOCTYPE html><html><head><title>Error in Test Report Generation</title><style>body { font-family: sans-serif; margin: 40px; } .error { color: red; background: #ffeeee; padding: 20px; border-radius: 5px; }</style></head><body><h1>Error Generating Test Report</h1><div class="error"><p><strong>An error occurred while generating the test report:</strong></p><p>JUnit XML report was not found.</p></div></body></html>' > chabbi_project/test-results/html/error.html
           # Also create index.html pointing to the error page
           cp chabbi_project/test-results/html/error.html chabbi_project/test-results/html/index.html
           echo "Created error.html and index.html for GitHub Pages"
