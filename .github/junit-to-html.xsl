@@ -3,80 +3,345 @@
   <xsl:template match="/">
     <html>
       <head>
-        <title>Hoppscotch Test Results</title>
+        <title>Hoppscotch API Test Dashboard</title>
         <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          h1 { color: #333; }
-          .summary { background-color: #f0f0f0; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
-          .success { color: green; }
-          .failure { color: red; }
-          table { border-collapse: collapse; width: 100%; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          th { background-color: #f2f2f2; }
-          tr:nth-child(even) { background-color: #f9f9f9; }
-          .testcase { margin-bottom: 10px; border: 1px solid #ddd; padding: 10px; }
-          .testcase-name { font-weight: bold; }
-          .testcase-time { color: #666; }
+          :root {
+            --primary-color: #7D4CDB;
+            --success-color: #00C781;
+            --warning-color: #FFAA15;
+            --error-color: #FF4040;
+            --info-color: #3D138D;
+            --text-color: #444444;
+            --light-bg: #f5f7fa;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+          }
+          
+          body {
+            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: var(--text-color);
+            background-color: var(--light-bg);
+          }
+          
+          .dashboard {
+            padding: 2rem;
+          }
+          
+          header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          }
+          
+          h1 {
+            margin: 0;
+            font-weight: 500;
+          }
+          
+          .summary-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+          }
+          
+          .summary-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            transition: transform 0.2s;
+            border-top: 4px solid var(--primary-color);
+          }
+          
+          .summary-card:hover {
+            transform: translateY(-5px);
+          }
+          
+          .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+          }
+          
+          .stat-label {
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            color: #666;
+            letter-spacing: 1px;
+          }
+          
+          .success-card { border-top-color: var(--success-color); }
+          .error-card { border-top-color: var(--error-color); }
+          .warning-card { border-top-color: var(--warning-color); }
+          .info-card { border-top-color: var(--info-color); }
+          
+          .testsuite-container {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+          }
+          
+          .testsuite-header {
+            padding: 1rem 1.5rem;
+            background-color: #f8fafc;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          
+          .testsuite-name {
+            font-size: 1.25rem;
+            color: var(--primary-color);
+            font-weight: 500;
+            margin: 0;
+          }
+          
+          .testsuite-time {
+            color: #666;
+            font-size: 0.9rem;
+          }
+          
+          table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          
+          th {
+            text-align: left;
+            padding: 1rem 1.5rem;
+            background-color: #f8fafc;
+            color: #64748b;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border-color);
+          }
+          
+          td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+          }
+          
+          tr:last-child td {
+            border-bottom: none;
+          }
+          
+          tr:hover {
+            background-color: #f8fafc;
+          }
+          
+          .status {
+            font-weight: 600;
+            border-radius: 20px;
+            padding: 0.25rem 0.75rem;
+            text-align: center;
+            display: inline-block;
+            min-width: 80px;
+          }
+          
+          .status-passed {
+            background-color: rgba(0, 199, 129, 0.1);
+            color: var(--success-color);
+          }
+          
+          .status-failed {
+            background-color: rgba(255, 64, 64, 0.1);
+            color: var(--error-color);
+          }
+          
+          .status-error {
+            background-color: rgba(255, 170, 21, 0.1);
+            color: var(--warning-color);
+          }
+          
+          .details-container {
+            background-color: #f8fafc;
+            border-radius: 4px;
+            padding: 1rem;
+            margin-top: 0.5rem;
+            max-height: 200px;
+            overflow: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+            border-left: 3px solid var(--error-color);
+          }
+          
+          .timestamp {
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            text-align: center;
+          }
+          
+          .no-tests {
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+          }
+          
+          @media (max-width: 768px) {
+            .summary-container {
+              grid-template-columns: 1fr;
+            }
+            
+            .dashboard {
+              padding: 1rem;
+            }
+          }
         </style>
       </head>
       <body>
-        <h1>Hoppscotch Test Results</h1>
+        <header>
+          <h1>Hoppscotch API Test Dashboard</h1>
+        </header>
         
-        <div class="summary">
-          <h2>Summary</h2>
-          <p>
-            Total tests: <xsl:value-of select="count(//testcase)"/>, 
-            Failures: <xsl:value-of select="count(//failure)"/>, 
-            Errors: <xsl:value-of select="count(//error)"/>,
-            Time: <xsl:value-of select="sum(//testcase/@time)"/> seconds
-          </p>
-        </div>
-        
-        <h2>Test Suites</h2>
-        <xsl:for-each select="//testsuite">
-          <div class="testsuite">
-            <h3>
-              <xsl:value-of select="@name"/>
-              <span class="testcase-time"> (<xsl:value-of select="@time"/> seconds)</span>
-            </h3>
+        <div class="dashboard">
+          <!-- Summary Cards -->
+          <div class="summary-container">
+            <div class="summary-card success-card">
+              <div class="stat-value"><xsl:value-of select="count(//testcase)"/></div>
+              <div class="stat-label">Total Tests</div>
+            </div>
             
-            <table>
-              <tr>
-                <th>Test</th>
-                <th>Status</th>
-                <th>Time (s)</th>
-                <th>Details</th>
-              </tr>
-              <xsl:for-each select="testcase">
-                <tr>
-                  <td><xsl:value-of select="@name"/></td>
-                  <td>
-                    <xsl:choose>
-                      <xsl:when test="failure">
-                        <span class="failure">FAILED</span>
-                      </xsl:when>
-                      <xsl:when test="error">
-                        <span class="failure">ERROR</span>
-                      </xsl:when>
-                      <xsl:otherwise>
-                        <span class="success">PASSED</span>
-                      </xsl:otherwise>
-                    </xsl:choose>
-                  </td>
-                  <td><xsl:value-of select="@time"/></td>
-                  <td>
-                    <xsl:if test="failure">
-                      <pre><xsl:value-of select="failure/@message"/></pre>
-                    </xsl:if>
-                    <xsl:if test="error">
-                      <pre><xsl:value-of select="error/@message"/></pre>
-                    </xsl:if>
-                  </td>
-                </tr>
-              </xsl:for-each>
-            </table>
+            <div class="summary-card success-card">
+              <div class="stat-value">
+                <xsl:value-of select="count(//testcase) - count(//failure) - count(//error)"/>
+              </div>
+              <div class="stat-label">Passed</div>
+            </div>
+            
+            <div class="summary-card error-card">
+              <div class="stat-value"><xsl:value-of select="count(//failure)"/></div>
+              <div class="stat-label">Failed</div>
+            </div>
+            
+            <div class="summary-card warning-card">
+              <div class="stat-value"><xsl:value-of select="count(//error)"/></div>
+              <div class="stat-label">Errors</div>
+            </div>
+            
+            <div class="summary-card info-card">
+              <div class="stat-value">
+                <xsl:choose>
+                  <xsl:when test="sum(//testcase/@time) > 0">
+                    <xsl:value-of select="format-number(sum(//testcase/@time), '0.000')"/>
+                  </xsl:when>
+                  <xsl:otherwise>0.000</xsl:otherwise>
+                </xsl:choose>
+              </div>
+              <div class="stat-label">Total Time (s)</div>
+            </div>
           </div>
-        </xsl:for-each>
+          
+          <!-- Test Suites -->
+          <h2>Test Suites</h2>
+          
+          <xsl:choose>
+            <xsl:when test="count(//testsuite) > 0">
+              <xsl:for-each select="//testsuite">
+                <div class="testsuite-container">
+                  <div class="testsuite-header">
+                    <h3 class="testsuite-name">
+                      <xsl:value-of select="@name"/>
+                    </h3>
+                    <span class="testsuite-time">
+                      <xsl:choose>
+                        <xsl:when test="@time">
+                          <xsl:value-of select="format-number(@time, '0.000')"/> seconds
+                        </xsl:when>
+                        <xsl:otherwise>0.000 seconds</xsl:otherwise>
+                      </xsl:choose>
+                    </span>
+                  </div>
+                  
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Test Name</th>
+                        <th>Status</th>
+                        <th>Time (s)</th>
+                        <th>Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <xsl:for-each select="testcase">
+                        <tr>
+                          <td><xsl:value-of select="@name"/></td>
+                          <td>
+                            <xsl:choose>
+                              <xsl:when test="failure">
+                                <span class="status status-failed">FAILED</span>
+                              </xsl:when>
+                              <xsl:when test="error">
+                                <span class="status status-error">ERROR</span>
+                              </xsl:when>
+                              <xsl:otherwise>
+                                <span class="status status-passed">PASSED</span>
+                              </xsl:otherwise>
+                            </xsl:choose>
+                          </td>
+                          <td>
+                            <xsl:choose>
+                              <xsl:when test="@time">
+                                <xsl:value-of select="format-number(@time, '0.000')"/>
+                              </xsl:when>
+                              <xsl:otherwise>0.000</xsl:otherwise>
+                            </xsl:choose>
+                          </td>
+                          <td>
+                            <xsl:if test="failure">
+                              <div class="details-container">
+                                <strong>Failure: </strong>
+                                <xsl:value-of select="failure/@message"/>
+                                <xsl:if test="failure/text()">
+                                  <pre><xsl:value-of select="failure/text()"/></pre>
+                                </xsl:if>
+                              </div>
+                            </xsl:if>
+                            <xsl:if test="error">
+                              <div class="details-container">
+                                <strong>Error: </strong>
+                                <xsl:value-of select="error/@message"/>
+                                <xsl:if test="error/text()">
+                                  <pre><xsl:value-of select="error/text()"/></pre>
+                                </xsl:if>
+                              </div>
+                            </xsl:if>
+                            <xsl:if test="system-out">
+                              <details>
+                                <summary>System Output</summary>
+                                <div class="details-container">
+                                  <pre><xsl:value-of select="system-out"/></pre>
+                                </div>
+                              </details>
+                            </xsl:if>
+                          </td>
+                        </tr>
+                      </xsl:for-each>
+                    </tbody>
+                  </table>
+                </div>
+              </xsl:for-each>
+            </xsl:when>
+            <xsl:otherwise>
+              <div class="no-tests">No test suites found in the report.</div>
+            </xsl:otherwise>
+          </xsl:choose>
+          
+          <div class="timestamp">
+            Report generated on: <xsl:value-of select="//testsuite/@timestamp"/><br/>
+            <em>Powered by Hoppscotch API Tests</em>
+          </div>
+        </div>
       </body>
     </html>
   </xsl:template>
