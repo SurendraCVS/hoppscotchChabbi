@@ -8,7 +8,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write  # Needed for GitHub Pages deployment
+  pages: write
+  id-token: write
   checks: write
   issues: read
   pull-requests: write
@@ -91,10 +93,29 @@ jobs:
         if [ -f chabbi_project/test-results/junit-report.xml ]; then
           python .github/junit_to_html.py chabbi_project/test-results/junit-report.xml chabbi_project/test-results/html/test-report.html
           echo "HTML report generated successfully"
+          
+          # Create an index.html that redirects to the latest report
+          cat > chabbi_project/test-results/html/index.html <<EOF
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0; url=test-report.html">
+  <title>Redirecting to latest test report</title>
+</head>
+<body>
+  <p>Redirecting to the latest test report...</p>
+  <p><a href="test-report.html">Click here if you are not redirected automatically</a></p>
+</body>
+</html>
+EOF
+          echo "Created index.html redirect"
         else
           echo "ERROR: JUnit XML file not found, cannot generate HTML report"
           # Create a simple error HTML file using Python
           echo "<html><body><h1>Error</h1><p>JUnit XML report was not found.</p></body></html>" > chabbi_project/test-results/html/error.html
+          # Create an index.html that shows the error
+          cp chabbi_project/test-results/html/error.html chabbi_project/test-results/html/index.html
         fi
 
     - name: Upload JUnit XML Results
@@ -109,10 +130,31 @@ jobs:
       uses: actions/upload-artifact@v4
       if: always()  # Run even if tests fail
       with:
-        name: html-test-results
+        name: html-test-reports
         path: chabbi_project/test-results/html/
         retention-days: 7
+    
+    # Set up GitHub Pages
+    - name: Setup Pages
+      if: always() && github.event_name != 'pull_request'
+      uses: actions/configure-pages@v4
+    
+    # Deploy report to GitHub Pages
+    - name: Deploy to GitHub Pages
+      if: always() && github.event_name != 'pull_request'
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        folder: chabbi_project/test-results/html
+        branch: gh-pages
+        clean: true
+        commit-message: "Update test report [skip ci]"
         
     - name: Echo Success
       if: always()
-      run: echo "CI/CD pipeline completed successfully"
+      run: |
+        echo "CI/CD pipeline completed successfully"
+        echo ""
+        if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+          echo "Test report available at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          echo "Test report URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> $GITHUB_STEP_SUMMARY
+        fi
