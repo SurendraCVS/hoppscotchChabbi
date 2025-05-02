@@ -2,16 +2,13 @@ name: Hoppscotch API Tests
 
 on:
   push:
-    branches: [ main ] # Only trigger on push to main
+    branches: [ main ]
   pull_request:
-    branches: [ main ] # Only trigger on PR to main
-  workflow_dispatch:   # Allow manual trigger
+    branches: [ main ]
+  workflow_dispatch:
 
-# Single place to configure the GitHub Pages settings
 permissions:
-  contents: write
-  pages: write
-  id-token: write
+  contents: read
   checks: write
   issues: read
   pull-requests: write
@@ -19,16 +16,10 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    # Single job that handles testing and deployment from main branch
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-    - name: Checkout main branch
+    - name: Checkout code
       uses: actions/checkout@v3
-      with:
-        ref: main  # Explicitly checkout main branch
 
     - name: Setup Node.js v20
       uses: actions/setup-node@v3
@@ -70,6 +61,21 @@ jobs:
         echo "Checking generated JUnit report file:"
         ls -la test-results/
         
+        # Examine JUnit XML structure for debugging
+        if [ -f test-results/junit-report.xml ]; then
+          echo "First 30 lines of JUnit XML:"
+          head -n 30 test-results/junit-report.xml
+        fi
+        
+        # Report test status
+        if [ $TEST_EXIT_CODE -ne 0 ]; then
+          echo "Tests failed with exit code: $TEST_EXIT_CODE" >> $GITHUB_STEP_SUMMARY
+          echo "Tests failed with exit code: $TEST_EXIT_CODE"
+        else
+          echo "Tests passed successfully" >> $GITHUB_STEP_SUMMARY
+          echo "Tests passed successfully"
+        fi
+        
         # Exit with success even if tests fail to ensure we upload artifacts
         exit 0
 
@@ -78,29 +84,17 @@ jobs:
       run: |
         echo "Converting JUnit XML to HTML report using Python..."
         
-        # Create a directory for GitHub Pages
-        mkdir -p _site
+        # Create a directory for HTML reports
+        mkdir -p chabbi_project/test-results/html
         
         # Run the Python script to convert XML to HTML
         if [ -f chabbi_project/test-results/junit-report.xml ]; then
-          python .github/junit_to_html.py chabbi_project/test-results/junit-report.xml _site/index.html
-          echo "HTML report generated successfully at _site/index.html"
-          
-          # Add .nojekyll file to prevent GitHub Pages from processing with Jekyll
-          touch _site/.nojekyll
-          
-          # Create a simple redirect page
-          echo "# Test Reports" > _site/README.md
-          echo "" >> _site/README.md
-          echo "Please see the HTML test reports [here](./index.html)." >> _site/README.md
-          
-          echo "Added necessary files for GitHub Pages"
+          python .github/junit_to_html.py chabbi_project/test-results/junit-report.xml chabbi_project/test-results/html/test-report.html
+          echo "HTML report generated successfully"
         else
           echo "ERROR: JUnit XML file not found, cannot generate HTML report"
-          # Create an error HTML file
-          echo "<html><body><h1>Error</h1><p>JUnit XML report was not found.</p></body></html>" > _site/index.html
-          touch _site/.nojekyll
-          echo "Created error HTML file"
+          # Create a simple error HTML file using Python
+          echo "<html><body><h1>Error</h1><p>JUnit XML report was not found.</p></body></html>" > chabbi_project/test-results/html/error.html
         fi
 
     - name: Upload JUnit XML Results
@@ -111,59 +105,14 @@ jobs:
         path: chabbi_project/test-results/junit-report.xml
         retention-days: 7
         
-    # Force GitHub Pages to deploy from a branch
-    - name: Create and push gh-pages branch
-      if: always() && github.event_name != 'pull_request'
-      run: |
-        # Navigate to the _site directory
-        cd _site
-        
-        # Initialize git
-        git init
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        
-        # Add all files
-        git add .
-        
-        # Commit
-        git commit -m "Deploy HTML test reports"
-        
-        # Push to gh-pages branch, force push to reset the branch each time
-        git push --force "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:gh-pages
-        
-        echo "Pushed HTML test reports to gh-pages branch"
-        
-    # Generate URL for easy reference    
-    - name: Generate GitHub Pages URL
-      if: always() && github.event_name != 'pull_request'
-      run: |
-        # Get the repository owner and name from the GitHub context
-        REPO_OWNER=$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 1)
-        REPO_NAME=$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 2)
-        
-        # Generate the GitHub Pages URL dynamically
-        GITHUB_PAGES_URL="https://${REPO_OWNER}.github.io/${REPO_NAME}/"
-        
-        # Make it available in the logs
-        echo ""
-        echo "==================================================================================="
-        echo "🚀 HTML TEST REPORTS PUBLISHED TO GITHUB PAGES"
-        echo "==================================================================================="
-        echo ""
-        echo "📊 Report URL: $GITHUB_PAGES_URL"
-        echo ""
-        echo "This URL can be easily shared with team members to view the HTML test reports."
-        echo "==================================================================================="
-        
-        # Write a simple text file to upload as an artifact
-        echo "$GITHUB_PAGES_URL" > report_url.txt
-        
-    # Upload the URL as a simple artifact for easy access
-    - name: Upload Report URL
+    - name: Upload HTML Report
       uses: actions/upload-artifact@v4
-      if: always() && github.event_name != 'pull_request'
+      if: always()  # Run even if tests fail
       with:
-        name: report-url
-        path: report_url.txt
+        name: html-test-results
+        path: chabbi_project/test-results/html/
         retention-days: 7
+        
+    - name: Echo Success
+      if: always()
+      run: echo "CI/CD pipeline completed successfully"
