@@ -115,6 +115,13 @@ jobs:
           touch _site/.nojekyll
           echo "Created error HTML file"
         fi
+        
+        # Add links to the HTML report in the GitHub step summary
+        echo "## 📊 Test Reports" >> $GITHUB_STEP_SUMMARY
+        echo "HTML test report has been generated and is available in the following locations:" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "1. ⬇️ **Download Artifact**: You can download the report from the 'Artifacts' section below." >> $GITHUB_STEP_SUMMARY
+        echo "2. 🔗 **GitHub Pages**: If this is a main branch run, the report will be published to GitHub Pages." >> $GITHUB_STEP_SUMMARY
 
     - name: Upload JUnit XML Results
       uses: actions/upload-artifact@v4
@@ -125,12 +132,28 @@ jobs:
         retention-days: 7
         
     - name: Upload HTML Report
+      id: upload-html-report
       uses: actions/upload-artifact@v4
       if: always()  # Run even if tests fail
       with:
         name: html-test-reports
         path: _site
         retention-days: 7
+    
+    # Display information about the HTML artifact in the step summary
+    - name: Display HTML Artifact Information
+      if: always()
+      run: |
+        echo "## 🔍 How to View HTML Test Reports" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### From Artifacts" >> $GITHUB_STEP_SUMMARY
+        echo "1. Go to the 'Summary' page of this workflow run" >> $GITHUB_STEP_SUMMARY
+        echo "2. Scroll down to the 'Artifacts' section" >> $GITHUB_STEP_SUMMARY
+        echo "3. Download the 'html-test-reports' artifact" >> $GITHUB_STEP_SUMMARY
+        echo "4. Extract the zip file" >> $GITHUB_STEP_SUMMARY
+        echo "5. Open the 'index.html' file in your browser" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "The HTML report provides a visual dashboard of all test results with detailed information." >> $GITHUB_STEP_SUMMARY
     
     # Create the github-pages artifact required by deploy-pages
     - name: Upload Pages artifact
@@ -168,7 +191,9 @@ jobs:
           echo "1. Main URL: $GITHUB_PAGES_URL"
           echo "2. Direct to index.html: $GITHUB_PAGES_URL/index.html"
           
-          echo "Test report URLs:" >> $GITHUB_STEP_SUMMARY
-          echo "1. Main URL: $GITHUB_PAGES_URL" >> $GITHUB_STEP_SUMMARY
-          echo "2. Direct to index.html: $GITHUB_PAGES_URL/index.html" >> $GITHUB_STEP_SUMMARY
+          echo "## 🌐 Published Test Report URLs" >> $GITHUB_STEP_SUMMARY
+          echo "The HTML test report has been published to GitHub Pages and is available at:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- [View Test Dashboard]($GITHUB_PAGES_URL)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Direct Link to HTML Report]($GITHUB_PAGES_URL/index.html)" >> $GITHUB_STEP_SUMMARY
         fi
