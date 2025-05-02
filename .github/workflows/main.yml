@@ -94,30 +94,26 @@ jobs:
         echo "Converting JUnit XML to HTML report using Python..."
         
         # Create a directory for HTML reports
-        mkdir -p chabbi_project/test-results/html
+        mkdir -p _site
         
         # Run the Python script to convert XML to HTML
         if [ -f chabbi_project/test-results/junit-report.xml ]; then
-          python .github/junit_to_html.py chabbi_project/test-results/junit-report.xml chabbi_project/test-results/html/test-report.html
-          echo "HTML report generated successfully"
-          
-          # Rename test-report.html to index.html for direct display
-          cp chabbi_project/test-results/html/test-report.html chabbi_project/test-results/html/index.html
-          echo "Created index.html from test report"
+          python .github/junit_to_html.py chabbi_project/test-results/junit-report.xml _site/index.html
+          echo "HTML report generated successfully at _site/index.html"
           
           # Add .nojekyll file to prevent GitHub Pages from processing with Jekyll
-          touch chabbi_project/test-results/html/.nojekyll
+          touch _site/.nojekyll
           echo "Added .nojekyll file"
           
           # List files to verify
-          echo "Files to be deployed:"
-          ls -la chabbi_project/test-results/html/
+          echo "Files to be deployed from _site directory:"
+          ls -la _site/
         else
           echo "ERROR: JUnit XML file not found, cannot generate HTML report"
-          # Copy the error HTML file
-          cp .github/error.html chabbi_project/test-results/html/error.html
-          cp .github/error.html chabbi_project/test-results/html/index.html
-          echo "Created error HTML files"
+          # Create an error HTML file
+          echo "<html><body><h1>Error</h1><p>JUnit XML report was not found.</p></body></html>" > _site/index.html
+          touch _site/.nojekyll
+          echo "Created error HTML file"
         fi
 
     - name: Upload JUnit XML Results
@@ -133,26 +129,36 @@ jobs:
       if: always()  # Run even if tests fail
       with:
         name: html-test-reports
-        path: chabbi_project/test-results/html/
+        path: _site
         retention-days: 7
     
-    # Configure GitHub Pages
+    # Deploy directly to gh-pages branch using a force push
+    - name: Force deploy to gh-pages branch
+      if: always() && github.event_name != 'pull_request'
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        folder: _site
+        branch: gh-pages
+        clean: true
+        single-commit: true
+        force: true
+        git-config-name: GitHub Actions
+        git-config-email: github-actions@github.com
+        commit-message: "Force deploy HTML report [skip ci]"
+        
+    # Now use the GitHub Pages API to publish
     - name: Setup GitHub Pages
       if: always() && github.event_name != 'pull_request'
+      id: pages
       uses: actions/configure-pages@v4
-      
-    # Upload directly to GitHub Pages
-    - name: Upload artifact for GitHub Pages
-      if: always() && github.event_name != 'pull_request'
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: 'chabbi_project/test-results/html'
         
-    # Deploy to GitHub Pages using GitHub's native pages deployment
     - name: Deploy to GitHub Pages
       if: always() && github.event_name != 'pull_request'
       id: deployment
       uses: actions/deploy-pages@v4
+      with:
+        # Use GitHub Pages API to deploy the gh-pages branch
+        artifact_name: github-pages
         
     - name: Echo Success and Report URLs
       if: always()
@@ -167,6 +173,11 @@ jobs:
           # Generate the GitHub Pages URL dynamically
           GITHUB_PAGES_URL="https://${REPO_OWNER}.github.io/${REPO_NAME}/"
           
-          echo "Test report URL: $GITHUB_PAGES_URL"
-          echo "Test report URL: $GITHUB_PAGES_URL" >> $GITHUB_STEP_SUMMARY
+          echo "Test report URLs:"
+          echo "1. Main URL: $GITHUB_PAGES_URL"
+          echo "2. Direct to index.html: $GITHUB_PAGES_URL/index.html"
+          
+          echo "Test report URLs:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Main URL: $GITHUB_PAGES_URL" >> $GITHUB_STEP_SUMMARY
+          echo "2. Direct to index.html: $GITHUB_PAGES_URL/index.html" >> $GITHUB_STEP_SUMMARY
         fi
