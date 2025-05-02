@@ -216,6 +216,16 @@
             font-weight: normal;
           }
           
+          /* Time badge for in-cell display */
+          .time-badge {
+            background-color: rgba(125, 76, 219, 0.1);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            display: inline-block;
+            font-family: monospace;
+            font-weight: 500;
+          }
+          
           @media (max-width: 768px) {
             .summary-container {
               grid-template-columns: 1fr;
@@ -331,12 +341,14 @@
                             </xsl:choose>
                           </td>
                           <td class="time-cell">
-                            <xsl:choose>
-                              <xsl:when test="@time">
-                                <xsl:value-of select="format-number(@time, '0.000')"/>
-                              </xsl:when>
-                              <xsl:otherwise>0.000</xsl:otherwise>
-                            </xsl:choose>
+                            <span class="time-badge">
+                              <xsl:choose>
+                                <xsl:when test="@time">
+                                  <xsl:value-of select="format-number(@time, '0.000')"/> seconds
+                                </xsl:when>
+                                <xsl:otherwise>0.000 seconds</xsl:otherwise>
+                              </xsl:choose>
+                            </span>
                           </td>
                           <td>
                             <xsl:if test="failure">
