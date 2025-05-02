@@ -94,20 +94,44 @@ jobs:
         
         # Run the Python script to convert XML to HTML
         if [ -f chabbi_project/test-results/junit-report.xml ]; then
-          python .github/junit_to_html.py chabbi_project/test-results/junit-report.xml _site/index.html
-          echo "HTML report generated successfully at _site/index.html"
+          python .github/junit_to_html.py chabbi_project/test-results/junit-report.xml _site/test-report.html
+          echo "HTML report generated successfully at _site/test-report.html"
+          
+          # Create an index.html file that automatically redirects to test-report.html
+          cat > _site/index.html << 'EOL'
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="refresh" content="0; url='./test-report.html'" />
+    <title>Redirecting to Test Report</title>
+  </head>
+  <body>
+    <p>Please wait while you are being redirected to the <a href="./test-report.html">test report</a>.</p>
+  </body>
+</html>
+EOL
           
           # Add .nojekyll file to prevent GitHub Pages from processing with Jekyll
           touch _site/.nojekyll
-          
-          # Create a simple README
-          echo "# Test Reports" > _site/README.md
-          echo "" >> _site/README.md
-          echo "Please see the HTML test reports [here](./index.html)." >> _site/README.md
         else
           echo "ERROR: JUnit XML file not found, cannot generate HTML report"
           # Create an error HTML file
-          echo "<html><body><h1>Error</h1><p>JUnit XML report was not found.</p></body></html>" > _site/index.html
+          echo "<html><body><h1>Error</h1><p>JUnit XML report was not found.</p></body></html>" > _site/test-report.html
+          
+          # Create an index.html file that redirects to the error page
+          cat > _site/index.html << 'EOL'
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="refresh" content="0; url='./test-report.html'" />
+    <title>Redirecting to Test Report</title>
+  </head>
+  <body>
+    <p>Please wait while you are being redirected to the <a href="./test-report.html">test report</a>.</p>
+  </body>
+</html>
+EOL
+          
           touch _site/.nojekyll
         fi
 
