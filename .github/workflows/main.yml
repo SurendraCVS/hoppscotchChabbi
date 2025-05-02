@@ -70,21 +70,6 @@ jobs:
         echo "Checking generated JUnit report file:"
         ls -la test-results/
         
-        # Examine JUnit XML structure for debugging
-        if [ -f test-results/junit-report.xml ]; then
-          echo "First 30 lines of JUnit XML:"
-          head -n 30 test-results/junit-report.xml
-        fi
-        
-        # Report test status
-        if [ $TEST_EXIT_CODE -ne 0 ]; then
-          echo "Tests failed with exit code: $TEST_EXIT_CODE" >> $GITHUB_STEP_SUMMARY
-          echo "Tests failed with exit code: $TEST_EXIT_CODE"
-        else
-          echo "Tests passed successfully" >> $GITHUB_STEP_SUMMARY
-          echo "Tests passed successfully"
-        fi
-        
         # Exit with success even if tests fail to ensure we upload artifacts
         exit 0
 
@@ -104,10 +89,6 @@ jobs:
           # Add .nojekyll file to prevent GitHub Pages from processing with Jekyll
           touch _site/.nojekyll
           echo "Added .nojekyll file"
-          
-          # List files to verify
-          echo "Files to be deployed from _site directory:"
-          ls -la _site/
         else
           echo "ERROR: JUnit XML file not found, cannot generate HTML report"
           # Create an error HTML file
@@ -115,13 +96,6 @@ jobs:
           touch _site/.nojekyll
           echo "Created error HTML file"
         fi
-        
-        # Add links to the HTML report in the GitHub step summary
-        echo "## 📊 Test Reports" >> $GITHUB_STEP_SUMMARY
-        echo "HTML test report has been generated and is available in the following locations:" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "1. ⬇️ **Download Artifact**: You can download the report from the 'Artifacts' section below." >> $GITHUB_STEP_SUMMARY
-        echo "2. 🔗 **GitHub Pages**: If this is a main branch run, the report will be published to GitHub Pages." >> $GITHUB_STEP_SUMMARY
 
     - name: Upload JUnit XML Results
       uses: actions/upload-artifact@v4
@@ -131,69 +105,22 @@ jobs:
         path: chabbi_project/test-results/junit-report.xml
         retention-days: 7
         
-    - name: Upload HTML Report
-      id: upload-html-report
-      uses: actions/upload-artifact@v4
-      if: always()  # Run even if tests fail
-      with:
-        name: html-test-reports
-        path: _site
-        retention-days: 7
-    
-    # Display information about the HTML artifact in the step summary
-    - name: Display HTML Artifact Information
-      if: always()
-      run: |
-        echo "## 🔍 How to View HTML Test Reports" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### From Artifacts" >> $GITHUB_STEP_SUMMARY
-        echo "1. Go to the 'Summary' page of this workflow run" >> $GITHUB_STEP_SUMMARY
-        echo "2. Scroll down to the 'Artifacts' section" >> $GITHUB_STEP_SUMMARY
-        echo "3. Download the 'html-test-reports' artifact" >> $GITHUB_STEP_SUMMARY
-        echo "4. Extract the zip file" >> $GITHUB_STEP_SUMMARY
-        echo "5. Open the 'index.html' file in your browser" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "The HTML report provides a visual dashboard of all test results with detailed information." >> $GITHUB_STEP_SUMMARY
-    
-    # Create the github-pages artifact required by deploy-pages
-    - name: Upload Pages artifact
-      if: always() && github.event_name != 'pull_request'
+    - name: Upload HTML Test Reports Directly for GitHub Pages
       uses: actions/upload-pages-artifact@v3
+      if: always() && github.event_name != 'pull_request'
       with:
         path: _site
+        name: html-test-reports  # This becomes the artifact name
         
-    # Now use the GitHub Pages API to publish
+    # Setup and deploy to GitHub Pages
     - name: Setup GitHub Pages
       if: always() && github.event_name != 'pull_request'
       id: pages
       uses: actions/configure-pages@v4
         
-    # Deploy to GitHub Pages with the github-pages artifact
-    - name: Deploy to GitHub Pages
+    - name: Deploy HTML Test Reports to GitHub Pages
       if: always() && github.event_name != 'pull_request'
       id: deployment
       uses: actions/deploy-pages@v4
-        
-    - name: Echo Success and Report URLs
-      if: always()
-      run: |
-        echo "CI/CD pipeline completed successfully from main branch"
-        echo ""
-        if [[ "${{ github.event_name }}" != "pull_request" ]]; then
-          # Get the repository owner and name from the GitHub context
-          REPO_OWNER=$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 1)
-          REPO_NAME=$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 2)
-          
-          # Generate the GitHub Pages URL dynamically
-          GITHUB_PAGES_URL="https://${REPO_OWNER}.github.io/${REPO_NAME}/"
-          
-          echo "Test report URLs:"
-          echo "1. Main URL: $GITHUB_PAGES_URL"
-          echo "2. Direct to index.html: $GITHUB_PAGES_URL/index.html"
-          
-          echo "## 🌐 Published Test Report URLs" >> $GITHUB_STEP_SUMMARY
-          echo "The HTML test report has been published to GitHub Pages and is available at:" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- [View Test Dashboard]($GITHUB_PAGES_URL)" >> $GITHUB_STEP_SUMMARY
-          echo "- [Direct Link to HTML Report]($GITHUB_PAGES_URL/index.html)" >> $GITHUB_STEP_SUMMARY
-        fi
+      with:
+        artifact_name: html-test-reports
