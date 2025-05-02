@@ -46,16 +46,31 @@ jobs:
         echo "Running tests with temp file:"
         mkdir -p test-results
         
-        # Generate JSON report
-        hopp test auth/auth.json -e temp_env.json --reporter json > test-results/test-report.json
+        # Execute test with JSON reporter
+        hopp test auth/auth.json -e temp_env.json -r json > test-results/test-report.json
         
-        # Generate HTML report
-        hopp test auth/auth.json -e temp_env.json --reporter html > test-results/test-report.html
+        # Execute test with HTML reporter
+        hopp test auth/auth.json -e temp_env.json -r html > test-results/test-report.html
+        
+        # Execute test with JUnit reporter
+        hopp test auth/auth.json -e temp_env.json -r junit > test-results/junit-report.xml
+        
+        # Check content of generated files
+        echo "Checking generated report files:"
+        ls -la test-results/
+        echo "Preview of JSON report (first 10 lines):"
+        head -n 10 test-results/test-report.json || echo "JSON file empty or not generated correctly"
+        echo "Preview of XML report (first 10 lines):"
+        head -n 10 test-results/junit-report.xml || echo "XML file empty or not generated correctly"
         
         # Save test results as summary
         echo "### Test Results Summary" >> $GITHUB_STEP_SUMMARY
         echo "Test execution completed at $(date)" >> $GITHUB_STEP_SUMMARY
         echo "Full reports available in artifacts" >> $GITHUB_STEP_SUMMARY
+        
+        # Capture actual test output for step summary
+        echo "### Test Output" >> $GITHUB_STEP_SUMMARY
+        hopp test auth/auth.json -e temp_env.json >> $GITHUB_STEP_SUMMARY
         
         # Exit with success even if tests fail to ensure we upload artifacts
         exit 0
