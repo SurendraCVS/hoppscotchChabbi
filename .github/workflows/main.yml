@@ -94,45 +94,15 @@ jobs:
           python .github/junit_to_html.py chabbi_project/test-results/junit-report.xml chabbi_project/test-results/html/test-report.html
           echo "HTML report generated successfully"
           
-          # Create an index.html that redirects to the latest report
-          cat > chabbi_project/test-results/html/index.html << 'EOHTML'
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0; url=test-report.html">
-  <title>Redirecting to latest test report</title>
-</head>
-<body>
-  <p>Redirecting to the latest test report...</p>
-  <p><a href="test-report.html">Click here if you are not redirected automatically</a></p>
-</body>
-</html>
-EOHTML
+          # Copy the redirect HTML file
+          cp .github/redirect.html chabbi_project/test-results/html/index.html
           echo "Created index.html redirect"
         else
           echo "ERROR: JUnit XML file not found, cannot generate HTML report"
-          # Create a simple error HTML file using Python
-          cat > chabbi_project/test-results/html/error.html << 'EOHTML'
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Error: Test Report Not Found</title>
-  <style>
-    body { font-family: sans-serif; margin: 40px; }
-    .error { color: red; background: #ffeeee; padding: 20px; border-radius: 5px; }
-  </style>
-</head>
-<body>
-  <h1>Error</h1>
-  <div class="error">
-    <p>JUnit XML report was not found.</p>
-  </div>
-</body>
-</html>
-EOHTML
-          # Create an index.html that shows the error
-          cp chabbi_project/test-results/html/error.html chabbi_project/test-results/html/index.html
+          # Copy the error HTML file
+          cp .github/error.html chabbi_project/test-results/html/error.html
+          cp .github/error.html chabbi_project/test-results/html/index.html
+          echo "Created error HTML files"
         fi
 
     - name: Upload JUnit XML Results
