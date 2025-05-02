@@ -269,16 +269,10 @@
             
             <div class="summary-card info-card">
               <div class="stat-value">
-                <!-- Calculate total time from all testcases -->
-                <xsl:variable name="totalTime">
-                  <xsl:choose>
-                    <xsl:when test="sum(//testcase/@time) > 0">
-                      <xsl:value-of select="format-number(sum(//testcase/@time), '0.000')"/>
-                    </xsl:when>
-                    <xsl:otherwise>0.000</xsl:otherwise>
-                  </xsl:choose>
-                </xsl:variable>
-                <xsl:value-of select="$totalTime"/>
+                <!-- Calculate and sum individual test times -->
+                <xsl:call-template name="format-total-time">
+                  <xsl:with-param name="nodes" select="//testcase/@time"/>
+                </xsl:call-template>
               </div>
               <div class="stat-label">Total Time (s)</div>
             </div>
@@ -303,15 +297,7 @@
                       </span>
                     </h3>
                     
-                    <!-- Format the time with 3 decimal places -->
-                    <span class="testsuite-time">
-                      <xsl:choose>
-                        <xsl:when test="@time">
-                          <xsl:value-of select="format-number(@time, '0.000')"/> seconds
-                        </xsl:when>
-                        <xsl:otherwise>0.000 seconds</xsl:otherwise>
-                      </xsl:choose>
-                    </span>
+                    <!-- Do not display separate time here, as we now show it in the table cells -->
                   </div>
                   
                   <table>
@@ -397,5 +383,37 @@
         </div>
       </body>
     </html>
+  </xsl:template>
+  
+  <!-- Helper template for calculating and formatting total time -->
+  <xsl:template name="format-total-time">
+    <xsl:param name="nodes" select="/.."/>
+    <xsl:param name="sum" select="0"/>
+    
+    <xsl:choose>
+      <xsl:when test="count($nodes) > 0">
+        <xsl:variable name="currentValue">
+          <xsl:choose>
+            <xsl:when test="string(number($nodes[1])) != 'NaN'">
+              <xsl:value-of select="number($nodes[1])"/>
+            </xsl:when>
+            <xsl:otherwise>0</xsl:otherwise>
+          </xsl:choose>
+        </xsl:variable>
+        
+        <xsl:call-template name="format-total-time">
+          <xsl:with-param name="nodes" select="$nodes[position() > 1]"/>
+          <xsl:with-param name="sum" select="$sum + $currentValue"/>
+        </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:choose>
+          <xsl:when test="$sum > 0">
+            <xsl:value-of select="format-number($sum, '0.000')"/>
+          </xsl:when>
+          <xsl:otherwise>0.000</xsl:otherwise>
+        </xsl:choose>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 </xsl:stylesheet> 
