@@ -95,7 +95,7 @@ jobs:
           echo "HTML report generated successfully"
           
           # Create an index.html that redirects to the latest report
-          cat > chabbi_project/test-results/html/index.html <<EOF
+          cat > chabbi_project/test-results/html/index.html << 'EOHTML'
 <!DOCTYPE html>
 <html>
 <head>
@@ -108,12 +108,29 @@ jobs:
   <p><a href="test-report.html">Click here if you are not redirected automatically</a></p>
 </body>
 </html>
-EOF
+EOHTML
           echo "Created index.html redirect"
         else
           echo "ERROR: JUnit XML file not found, cannot generate HTML report"
           # Create a simple error HTML file using Python
-          echo "<html><body><h1>Error</h1><p>JUnit XML report was not found.</p></body></html>" > chabbi_project/test-results/html/error.html
+          cat > chabbi_project/test-results/html/error.html << 'EOHTML'
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Error: Test Report Not Found</title>
+  <style>
+    body { font-family: sans-serif; margin: 40px; }
+    .error { color: red; background: #ffeeee; padding: 20px; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <h1>Error</h1>
+  <div class="error">
+    <p>JUnit XML report was not found.</p>
+  </div>
+</body>
+</html>
+EOHTML
           # Create an index.html that shows the error
           cp chabbi_project/test-results/html/error.html chabbi_project/test-results/html/index.html
         fi
