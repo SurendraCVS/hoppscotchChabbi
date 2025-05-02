@@ -128,24 +128,205 @@ jobs:
       if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
       uses: actions/configure-pages@v5
     
-    - name: Prepare GitHub Pages Deployment
+    - name: Enhance HTML Reports for Browser Viewing
       if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
       run: |
-        echo "Preparing HTML report for GitHub Pages deployment"
-        # Create index.html if it doesn't exist
-        if [ ! -f "chabbi_project/test-results/html/index.html" ]; then
-          cp chabbi_project/test-results/html/test-report.html chabbi_project/test-results/html/index.html
-          echo "Created index.html from test-report.html"
-        fi
+        echo "Enhancing HTML reports for browser viewing"
         
-        # List the content for debugging
-        ls -la chabbi_project/test-results/html/
+        # Create _site directory for GitHub Pages
+        mkdir -p _site
+        
+        # First, ensure the test-report.html exists
+        if [ -f "chabbi_project/test-results/html/test-report.html" ]; then
+          # Copy all HTML files to _site directory
+          cp -r chabbi_project/test-results/html/* _site/
+          
+          # Create a proper index.html if it doesn't exist
+          if [ ! -f "_site/index.html" ]; then
+            cp _site/test-report.html _site/index.html
+          fi
+          
+          # Create a landing page that lists all reports with proper formatting
+          cat > _site/index.html << EOF
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoppscotch API Test Reports</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #444444;
+            background-color: #f5f7fa;
+        }
+        
+        header {
+            background-color: #7D4CDB;
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        h1 {
+            margin: 0;
+            font-weight: 500;
+        }
+        
+        h2 {
+            color: #3D138D;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+            margin-top: 2rem;
+        }
+        
+        .report-card {
+            background-color: white;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+        
+        .report-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .report-info {
+            flex: 1;
+        }
+        
+        .report-title {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.25rem;
+            color: #3D138D;
+        }
+        
+        .report-meta {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .view-button {
+            background-color: #7D4CDB;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .view-button:hover {
+            background-color: #6B3ACB;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 1rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .timestamp {
+            margin-top: 1rem;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Hoppscotch API Test Reports</h1>
+    </header>
+    
+    <div class="container">
+        <h2>Latest Test Reports</h2>
+        
+        <div class="report-card">
+            <div class="report-info">
+                <h3 class="report-title">Detailed Test Report</h3>
+                <div class="report-meta">
+                    <p>Complete test results from the latest API test run</p>
+                </div>
+            </div>
+            <a href="test-report.html" class="view-button">View Report</a>
+        </div>
+        
+        <footer>
+            <p>Powered by Hoppscotch API Test Runner</p>
+            <p class="timestamp">Last updated: $(date)</p>
+        </footer>
+    </div>
+</body>
+</html>
+EOF
+          echo "Created enhanced index.html"
+          
+          # Ensure that all HTML files are properly linked
+          ls -la _site/
+        else
+          # Create a simple error index.html if test-report.html doesn't exist
+          cat > _site/index.html << EOF
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - Test Report Not Found</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 2rem;
+            line-height: 1.6;
+        }
+        .error {
+            background-color: #ffeeee;
+            padding: 1rem;
+            border-radius: 4px;
+            border-left: 4px solid #ff4040;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Report Not Found</h1>
+    <div class="error">
+        <p>The test report could not be found. This could be because:</p>
+        <ul>
+            <li>The tests have not been run yet</li>
+            <li>There was an error in generating the test report</li>
+            <li>The XML to HTML conversion failed</li>
+        </ul>
+        <p>Please check the GitHub Actions workflow logs for more information.</p>
+    </div>
+    <p>Generated at: $(date)</p>
+</body>
+</html>
+EOF
+          echo "Created error index.html as test-report.html was not found"
+        fi
     
     - name: Upload Pages Artifact
       if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
       uses: actions/upload-pages-artifact@v3
       with:
-        path: 'chabbi_project/test-results/html'
+        path: '_site'
     
     - name: Deploy to GitHub Pages
       if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
