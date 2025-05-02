@@ -8,7 +8,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write  # Changed to write for publishing to gh-pages branch
+  pages: write     # Added for GitHub Pages
+  id-token: write  # Added for GitHub Pages
   checks: write
   issues: read
   pull-requests: write
@@ -16,6 +18,9 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
     - name: Checkout code
@@ -84,17 +89,26 @@ jobs:
       run: |
         echo "Converting JUnit XML to HTML report using Python..."
         
-        # Create a directory for HTML reports
-        mkdir -p chabbi_project/test-results/html
+        # Create a directory for GitHub Pages
+        mkdir -p _site
         
         # Run the Python script to convert XML to HTML
         if [ -f chabbi_project/test-results/junit-report.xml ]; then
-          python .github/junit_to_html.py chabbi_project/test-results/junit-report.xml chabbi_project/test-results/html/test-report.html
-          echo "HTML report generated successfully"
+          python .github/junit_to_html.py chabbi_project/test-results/junit-report.xml _site/index.html
+          echo "HTML report generated successfully at _site/index.html"
+          
+          # Add .nojekyll file to prevent GitHub Pages from processing with Jekyll
+          touch _site/.nojekyll
+          
+          # Create a simple README
+          echo "# Test Reports" > _site/README.md
+          echo "" >> _site/README.md
+          echo "Please see the HTML test reports [here](./index.html)." >> _site/README.md
         else
           echo "ERROR: JUnit XML file not found, cannot generate HTML report"
-          # Create a simple error HTML file using Python
-          echo "<html><body><h1>Error</h1><p>JUnit XML report was not found.</p></body></html>" > chabbi_project/test-results/html/error.html
+          # Create an error HTML file
+          echo "<html><body><h1>Error</h1><p>JUnit XML report was not found.</p></body></html>" > _site/index.html
+          touch _site/.nojekyll
         fi
 
     - name: Upload JUnit XML Results
@@ -105,14 +119,60 @@ jobs:
         path: chabbi_project/test-results/junit-report.xml
         retention-days: 7
         
-    - name: Upload HTML Report
+    - name: Upload HTML Report as Artifact
       uses: actions/upload-artifact@v4
       if: always()  # Run even if tests fail
       with:
         name: html-test-results
-        path: chabbi_project/test-results/html/
+        path: _site/
         retention-days: 7
         
-    - name: Echo Success
-      if: always()
-      run: echo "CI/CD pipeline completed successfully"
+    # Deploy report to GitHub Pages
+    - name: Configure GitHub Pages
+      uses: actions/configure-pages@v4
+      if: github.event_name != 'pull_request'
+      
+    - name: Upload GitHub Pages Artifact
+      uses: actions/upload-pages-artifact@v3
+      if: always() && github.event_name != 'pull_request'
+      with:
+        path: _site/
+        
+    - name: Deploy to GitHub Pages
+      id: deployment
+      if: always() && github.event_name != 'pull_request'
+      uses: actions/deploy-pages@v4
+        
+    # Generate URL for reference in logs
+    - name: Generate GitHub Pages URL Info
+      if: always() && github.event_name != 'pull_request'
+      run: |
+        # Get the repository owner and name from the GitHub context
+        REPO_OWNER=$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 1)
+        REPO_NAME=$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 2)
+        
+        # Generate the GitHub Pages URL dynamically
+        GITHUB_PAGES_URL="https://${REPO_OWNER}.github.io/${REPO_NAME}/"
+        
+        # Make it available in the logs
+        echo ""
+        echo "==================================================================================="
+        echo "🚀 HTML TEST REPORTS PUBLISHED TO GITHUB PAGES"
+        echo "==================================================================================="
+        echo ""
+        echo "📊 Report URL: $GITHUB_PAGES_URL"
+        echo ""
+        echo "This URL can be easily shared with team members to view the HTML test reports."
+        echo "==================================================================================="
+        
+        # Write a simple text file to upload as an artifact
+        echo "$GITHUB_PAGES_URL" > report_url.txt
+        
+    # Upload the URL as a simple artifact for easy access
+    - name: Upload Report URL
+      uses: actions/upload-artifact@v4
+      if: always() && github.event_name != 'pull_request'
+      with:
+        name: report-url
+        path: report_url.txt
+        retention-days: 7
