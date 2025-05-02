@@ -78,7 +78,7 @@ jobs:
       run: |
         echo "Converting JUnit XML to HTML report using Python..."
         
-        # Create a directory for HTML reports
+        # Create a directory for GitHub Pages
         mkdir -p _site
         
         # Run the Python script to convert XML to HTML
@@ -88,7 +88,15 @@ jobs:
           
           # Add .nojekyll file to prevent GitHub Pages from processing with Jekyll
           touch _site/.nojekyll
-          echo "Added .nojekyll file"
+          
+          # Create a simple redirect page
+          cat > _site/README.md << 'EOL'
+# Test Reports
+
+Please see the HTML test reports [here](./index.html).
+EOL
+          
+          echo "Added necessary files for GitHub Pages"
         else
           echo "ERROR: JUnit XML file not found, cannot generate HTML report"
           # Create an error HTML file
@@ -105,43 +113,59 @@ jobs:
         path: chabbi_project/test-results/junit-report.xml
         retention-days: 7
         
-    - name: Upload HTML Test Reports Directly for GitHub Pages
-      uses: actions/upload-pages-artifact@v3
-      if: always() && github.event_name != 'pull_request'
-      with:
-        path: _site
-        name: html-test-reports  # This becomes the artifact name
-        
-    # Setup and deploy to GitHub Pages
-    - name: Setup GitHub Pages
-      if: always() && github.event_name != 'pull_request'
-      id: pages
-      uses: actions/configure-pages@v4
-        
-    - name: Deploy HTML Test Reports to GitHub Pages
-      if: always() && github.event_name != 'pull_request'
-      id: deployment
-      uses: actions/deploy-pages@v4
-      with:
-        artifact_name: html-test-reports
-        
-    # Display the GitHub Pages URL for easy sharing
-    - name: Display GitHub Pages URL
+    # Force GitHub Pages to deploy from a branch
+    - name: Create and push gh-pages branch
       if: always() && github.event_name != 'pull_request'
       run: |
-        # Display GitHub Pages URL prominently in the logs
+        # Navigate to the _site directory
+        cd _site
+        
+        # Initialize git
+        git init
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        # Add all files
+        git add .
+        
+        # Commit
+        git commit -m "Deploy HTML test reports"
+        
+        # Push to gh-pages branch, force push to reset the branch each time
+        git push --force "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:gh-pages
+        
+        echo "Pushed HTML test reports to gh-pages branch"
+        
+    # Generate URL for easy reference    
+    - name: Generate GitHub Pages URL
+      if: always() && github.event_name != 'pull_request'
+      run: |
+        # Get the repository owner and name from the GitHub context
+        REPO_OWNER=$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 1)
+        REPO_NAME=$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 2)
+        
+        # Generate the GitHub Pages URL dynamically
+        GITHUB_PAGES_URL="https://${REPO_OWNER}.github.io/${REPO_NAME}/"
+        
+        # Make it available in the logs
+        echo ""
         echo "==================================================================================="
         echo "🚀 HTML TEST REPORTS PUBLISHED TO GITHUB PAGES"
         echo "==================================================================================="
         echo ""
-        echo "👉 Report URL: ${{ steps.deployment.outputs.page_url }}"
+        echo "📊 Report URL: $GITHUB_PAGES_URL"
         echo ""
         echo "This URL can be easily shared with team members to view the HTML test reports."
         echo "==================================================================================="
         
-        # Make it permanently available in job summary
-        echo "## 🔗 Test Report Link" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### [View HTML Test Reports on GitHub Pages](${{ steps.deployment.outputs.page_url }})" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "This link can be shared with anyone who needs to view the test results." >> $GITHUB_STEP_SUMMARY
+        # Write a simple text file to upload as an artifact
+        echo "$GITHUB_PAGES_URL" > report_url.txt
+        
+    # Upload the URL as a simple artifact for easy access
+    - name: Upload Report URL
+      uses: actions/upload-artifact@v4
+      if: always() && github.event_name != 'pull_request'
+      with:
+        name: report-url
+        path: report_url.txt
+        retention-days: 7
