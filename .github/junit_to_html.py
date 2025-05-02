@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
 JUnit XML to HTML Converter for Hoppscotch API Tests
+For GitHub Pages deployment
 """
 import sys
 import os
 import xml.etree.ElementTree as ET
 from datetime import datetime
+import json
 
 def junit_to_html(xml_file, html_file):
     """Convert JUnit XML to HTML with a nice dashboard layout"""
@@ -36,13 +38,28 @@ def junit_to_html(xml_file, html_file):
         total_errors = sum(int(suite.get('errors', 0)) for suite in testsuites)
         total_passed = total_tests - total_failures - total_errors
         
+        # Get GitHub environment variables for build info
+        github_env = {}
+        for key in os.environ:
+            if key.startswith('GITHUB_'):
+                github_env[key] = os.environ.get(key, '')
+        
+        # Extract repository and workflow information
+        repo_name = github_env.get('GITHUB_REPOSITORY', 'Unknown Repository')
+        run_id = github_env.get('GITHUB_RUN_ID', 'Unknown Run')
+        workflow_name = github_env.get('GITHUB_WORKFLOW', 'Hoppscotch API Tests')
+        commit_sha = github_env.get('GITHUB_SHA', '')
+        short_sha = commit_sha[:7] if commit_sha else 'Unknown'
+        branch = github_env.get('GITHUB_REF_NAME', 'Unknown Branch')
+        run_url = f"https://github.com/{repo_name}/actions/runs/{run_id}" if run_id != 'Unknown Run' else '#'
+        
         # Build HTML content
         html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hoppscotch API Test Dashboard</title>
+    <title>Hoppscotch API Test Dashboard - {repo_name}</title>
     <style>
         :root {{
             --primary-color: #7D4CDB;
@@ -73,6 +90,32 @@ def junit_to_html(xml_file, html_file):
             color: white;
             padding: 1rem 2rem;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }}
+        
+        .header-content {{
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }}
+        
+        .header-info {{
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            font-size: 0.9rem;
+        }}
+        
+        .header-info a {{
+            color: white;
+            text-decoration: none;
+            opacity: 0.9;
+        }}
+        
+        .header-info a:hover {{
+            opacity: 1;
+            text-decoration: underline;
         }}
         
         h1 {{
@@ -229,6 +272,22 @@ def junit_to_html(xml_file, html_file):
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         }}
         
+        .build-info {{
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }}
+        
+        .build-badge {{
+            background-color: rgba(0, 0, 0, 0.05);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.8rem;
+        }}
+        
         .no-tests {{
             text-align: center;
             padding: 2rem;
@@ -266,12 +325,29 @@ def junit_to_html(xml_file, html_file):
             .dashboard {{
                 padding: 1rem;
             }}
+            
+            .header-content {{
+                flex-direction: column;
+                align-items: flex-start;
+            }}
+            
+            .header-info {{
+                margin-top: 1rem;
+                align-items: flex-start;
+            }}
         }}
     </style>
 </head>
 <body>
     <header>
-        <h1>Hoppscotch API Test Dashboard</h1>
+        <div class="header-content">
+            <h1>Hoppscotch API Test Dashboard</h1>
+            <div class="header-info">
+                <a href="{run_url}" target="_blank">Workflow Run #{run_id}</a>
+                <span>Branch: {branch}</span>
+                <span>Commit: {short_sha}</span>
+            </div>
+        </div>
     </header>
     
     <div class="dashboard">
@@ -434,12 +510,21 @@ def junit_to_html(xml_file, html_file):
         </div>
                 """
         
-        # Add timestamp
+        # Add timestamp and build info
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         html += f"""
         <div class="timestamp">
-            Report generated on: {timestamp}<br/>
-            <em>Powered by Hoppscotch API Test Runner</em>
+            <div>Report generated on: {timestamp}</div>
+            <div class="build-info">
+                <span class="build-badge">Repository: {repo_name}</span>
+                <span class="build-badge">Workflow: {workflow_name}</span>
+                <span class="build-badge">Branch: {branch}</span>
+                <span class="build-badge">Commit: {short_sha}</span>
+                <span class="build-badge">Run ID: {run_id}</span>
+            </div>
+            <div style="margin-top: 10px">
+                <em>Powered by Hoppscotch API Test Runner</em>
+            </div>
         </div>
     </div>
 </body>
