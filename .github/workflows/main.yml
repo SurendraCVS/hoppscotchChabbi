@@ -67,25 +67,21 @@ jobs:
         # Exit with success even if tests fail to ensure we upload artifacts
         exit 0
 
-    - name: Convert XML to HTML
+    - name: Convert XML to HTML using Python
       if: always()
       run: |
-        echo "Converting JUnit XML to HTML report..."
+        echo "Converting JUnit XML to HTML report using Python..."
         
         # Create a directory for HTML reports
         mkdir -p chabbi_project/test-results/html
         
-        # Install xsltproc for XML transformation
-        sudo apt-get update
-        sudo apt-get install -y xsltproc
-        
-        # Transform XML to HTML using XSLT
+        # Run the Python script to convert XML to HTML
         if [ -f chabbi_project/test-results/junit-report.xml ]; then
-          xsltproc .github/junit-to-html.xsl chabbi_project/test-results/junit-report.xml > chabbi_project/test-results/html/test-report.html
+          python .github/junit_to_html.py chabbi_project/test-results/junit-report.xml chabbi_project/test-results/html/test-report.html
           echo "HTML report generated successfully"
         else
           echo "ERROR: JUnit XML file not found, cannot generate HTML report"
-          # Create a simple error HTML file
+          # Create a simple error HTML file using Python
           echo "<html><body><h1>Error</h1><p>JUnit XML report was not found.</p></body></html>" > chabbi_project/test-results/html/error.html
         fi
 
