@@ -43,7 +43,27 @@ jobs:
         echo "Running Hoppscotch tests with v0.21.0"
         cd chabbi_project
         echo "Running tests with temp file:"
-        hopp test auth/auth.json -e temp_env.json
+        mkdir -p test-results
+        # Generate JSON report
+        hopp test auth/auth.json -e temp_env.json --reporter json > test-results/test-report.json
+        # Generate HTML report
+        hopp test auth/auth.json -e temp_env.json --reporter html > test-results/test-report.html
+        # Generate JUnit XML report
+        hopp test auth/auth.json -e temp_env.json --reporter junit > test-results/junit-report.xml
 
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v3
+      if: always()  # Run even if tests fail
+      with:
+        name: hoppscotch-test-results
+        path: chabbi_project/test-results/
+        retention-days: 7
+        
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: chabbi_project/test-results/junit-report.xml
+        
     - name: Echo Success
       run: echo "CI/CD pipeline completed successfully"
