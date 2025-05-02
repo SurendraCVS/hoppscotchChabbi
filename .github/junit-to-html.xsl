@@ -107,6 +107,9 @@
           .testsuite-time {
             color: #666;
             font-size: 0.9rem;
+            background-color: rgba(125, 76, 219, 0.1);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
           }
           
           table {
@@ -129,6 +132,14 @@
           td {
             padding: 1rem 1.5rem;
             border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+            text-align: left;
+          }
+          
+          .time-cell {
+            text-align: center;
+            font-family: monospace;
+            font-weight: 500;
           }
           
           tr:last-child td {
@@ -178,14 +189,31 @@
           .timestamp {
             color: #666;
             font-size: 0.85rem;
-            margin-top: 1rem;
+            margin-top: 2rem;
             text-align: center;
+            padding: 1rem;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
           }
           
           .no-tests {
             text-align: center;
             padding: 2rem;
             color: #64748b;
+          }
+          
+          /* Status column alignment */
+          .status-column {
+            text-align: center;
+          }
+          
+          /* Test stats in header */
+          .suite-stats {
+            margin-left: 1rem;
+            font-size: 0.85rem;
+            color: #64748b;
+            font-weight: normal;
           }
           
           @media (max-width: 768px) {
@@ -231,12 +259,16 @@
             
             <div class="summary-card info-card">
               <div class="stat-value">
-                <xsl:choose>
-                  <xsl:when test="sum(//testcase/@time) > 0">
-                    <xsl:value-of select="format-number(sum(//testcase/@time), '0.000')"/>
-                  </xsl:when>
-                  <xsl:otherwise>0.000</xsl:otherwise>
-                </xsl:choose>
+                <!-- Calculate total time from all testcases -->
+                <xsl:variable name="totalTime">
+                  <xsl:choose>
+                    <xsl:when test="sum(//testcase/@time) > 0">
+                      <xsl:value-of select="format-number(sum(//testcase/@time), '0.000')"/>
+                    </xsl:when>
+                    <xsl:otherwise>0.000</xsl:otherwise>
+                  </xsl:choose>
+                </xsl:variable>
+                <xsl:value-of select="$totalTime"/>
               </div>
               <div class="stat-label">Total Time (s)</div>
             </div>
@@ -252,7 +284,16 @@
                   <div class="testsuite-header">
                     <h3 class="testsuite-name">
                       <xsl:value-of select="@name"/>
+                      <!-- Calculate tests, passes, failures for this suite -->
+                      <span class="suite-stats">
+                        <xsl:value-of select="count(testcase)"/> tests, 
+                        <xsl:value-of select="count(testcase) - count(testcase/failure) - count(testcase/error)"/> passed,
+                        <xsl:value-of select="count(testcase/failure)"/> failed,
+                        <xsl:value-of select="count(testcase/error)"/> errors
+                      </span>
                     </h3>
+                    
+                    <!-- Format the time with 3 decimal places -->
                     <span class="testsuite-time">
                       <xsl:choose>
                         <xsl:when test="@time">
@@ -267,8 +308,8 @@
                     <thead>
                       <tr>
                         <th>Test Name</th>
-                        <th>Status</th>
-                        <th>Time (s)</th>
+                        <th class="status-column">Status</th>
+                        <th style="text-align: center;">Time (s)</th>
                         <th>Details</th>
                       </tr>
                     </thead>
@@ -276,7 +317,7 @@
                       <xsl:for-each select="testcase">
                         <tr>
                           <td><xsl:value-of select="@name"/></td>
-                          <td>
+                          <td class="status-column">
                             <xsl:choose>
                               <xsl:when test="failure">
                                 <span class="status status-failed">FAILED</span>
@@ -289,7 +330,7 @@
                               </xsl:otherwise>
                             </xsl:choose>
                           </td>
-                          <td>
+                          <td class="time-cell">
                             <xsl:choose>
                               <xsl:when test="@time">
                                 <xsl:value-of select="format-number(@time, '0.000')"/>
