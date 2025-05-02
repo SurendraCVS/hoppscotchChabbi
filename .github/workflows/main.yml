@@ -132,19 +132,12 @@ jobs:
         path: _site
         retention-days: 7
     
-    # Deploy directly to gh-pages branch using a force push
-    - name: Force deploy to gh-pages branch
+    # Create the github-pages artifact required by deploy-pages
+    - name: Upload Pages artifact
       if: always() && github.event_name != 'pull_request'
-      uses: JamesIves/github-pages-deploy-action@v4
+      uses: actions/upload-pages-artifact@v3
       with:
-        folder: _site
-        branch: gh-pages
-        clean: true
-        single-commit: true
-        force: true
-        git-config-name: GitHub Actions
-        git-config-email: github-actions@github.com
-        commit-message: "Force deploy HTML report [skip ci]"
+        path: _site
         
     # Now use the GitHub Pages API to publish
     - name: Setup GitHub Pages
@@ -152,13 +145,11 @@ jobs:
       id: pages
       uses: actions/configure-pages@v4
         
+    # Deploy to GitHub Pages with the github-pages artifact
     - name: Deploy to GitHub Pages
       if: always() && github.event_name != 'pull_request'
       id: deployment
       uses: actions/deploy-pages@v4
-      with:
-        # Use GitHub Pages API to deploy the gh-pages branch
-        artifact_name: github-pages
         
     - name: Echo Success and Report URLs
       if: always()
