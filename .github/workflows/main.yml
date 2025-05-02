@@ -46,31 +46,37 @@ jobs:
         echo "Running tests with temp file:"
         mkdir -p test-results
         
-        # Execute test with JSON reporter
-        hopp test auth/auth.json -e temp_env.json -r json > test-results/test-report.json
+        # Run the tests with JUnit reporter as per Hoppscotch documentation
+        echo "Running tests with JUnit reporter..."
+        hopp test auth/auth.json --env temp_env.json --reporter-junit test-results/junit-report.xml
+        TEST_EXIT_CODE=$?
         
-        # Execute test with HTML reporter
-        hopp test auth/auth.json -e temp_env.json -r html > test-results/test-report.html
-        
-        # Execute test with JUnit reporter
-        hopp test auth/auth.json -e temp_env.json -r junit > test-results/junit-report.xml
-        
-        # Check content of generated files
-        echo "Checking generated report files:"
+        # Check if JUnit report was generated
+        echo "Checking generated JUnit report file:"
         ls -la test-results/
-        echo "Preview of JSON report (first 10 lines):"
-        head -n 10 test-results/test-report.json || echo "JSON file empty or not generated correctly"
-        echo "Preview of XML report (first 10 lines):"
-        head -n 10 test-results/junit-report.xml || echo "XML file empty or not generated correctly"
+        
+        # Provide a preview of the JUnit XML
+        if [ -f test-results/junit-report.xml ]; then
+          echo "Preview of JUnit XML report (first 10 lines):"
+          head -n 10 test-results/junit-report.xml
+        else
+          echo "WARNING: JUnit XML file not generated"
+        fi
         
         # Save test results as summary
         echo "### Test Results Summary" >> $GITHUB_STEP_SUMMARY
         echo "Test execution completed at $(date)" >> $GITHUB_STEP_SUMMARY
-        echo "Full reports available in artifacts" >> $GITHUB_STEP_SUMMARY
         
-        # Capture actual test output for step summary
+        # Report test status
+        if [ $TEST_EXIT_CODE -ne 0 ]; then
+          echo "Tests failed with exit code: $TEST_EXIT_CODE" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "Tests passed successfully" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Add standard output to summary as well
         echo "### Test Output" >> $GITHUB_STEP_SUMMARY
-        hopp test auth/auth.json -e temp_env.json >> $GITHUB_STEP_SUMMARY
+        hopp test auth/auth.json --env temp_env.json >> $GITHUB_STEP_SUMMARY
         
         # Exit with success even if tests fail to ensure we upload artifacts
         exit 0
@@ -83,5 +89,12 @@ jobs:
         path: chabbi_project/test-results/
         retention-days: 7
         
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always() && runner.os == 'Linux'
+      with:
+        junit_files: chabbi_project/test-results/junit-report.xml
+        
     - name: Echo Success
+      if: always()
       run: echo "CI/CD pipeline completed successfully"
