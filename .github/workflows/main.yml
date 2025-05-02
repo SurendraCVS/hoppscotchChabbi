@@ -94,7 +94,7 @@ jobs:
           python .github/junit_to_html.py chabbi_project/test-results/junit-report.xml chabbi_project/test-results/html/test-report.html
           echo "HTML report generated successfully"
           
-          # Copy the redirect HTML file
+          # Copy the redirect HTML file to index.html (explicit at root level)
           cp .github/redirect.html chabbi_project/test-results/html/index.html
           echo "Created index.html redirect"
         else
@@ -121,20 +121,41 @@ jobs:
         path: chabbi_project/test-results/html/
         retention-days: 7
     
-    # Set up GitHub Pages
-    - name: Setup Pages
+    # Set up GitHub Pages directly with specific source
+    - name: Setup GitHub Pages
       if: always() && github.event_name != 'pull_request'
       uses: actions/configure-pages@v4
     
-    # Deploy report to GitHub Pages
+    # Create a separate deployment folder
+    - name: Prepare deployment folder
+      if: always() && github.event_name != 'pull_request'
+      run: |
+        # Create a clean deployment directory
+        mkdir -p _site
+        
+        # Copy the HTML report files to the deployment directory
+        cp -r chabbi_project/test-results/html/* _site/
+        
+        # Add a .nojekyll file to disable Jekyll processing
+        touch _site/.nojekyll
+        
+        # Create a DEBUG file to check deployment
+        echo "Deployment timestamp: $(date)" > _site/debug.txt
+        echo "Files in deployment directory:" >> _site/debug.txt
+        ls -la _site/ >> _site/debug.txt
+
+    # Deploy to GitHub Pages
+    - name: Upload GitHub Pages artifact
+      if: always() && github.event_name != 'pull_request'
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: _site
+    
+    # Deploy GitHub Pages site
     - name: Deploy to GitHub Pages
       if: always() && github.event_name != 'pull_request'
-      uses: JamesIves/github-pages-deploy-action@v4
-      with:
-        folder: chabbi_project/test-results/html
-        branch: gh-pages
-        clean: true
-        commit-message: "Update test report [skip ci]"
+      id: deployment
+      uses: actions/deploy-pages@v4
         
     - name: Echo Success
       if: always()
