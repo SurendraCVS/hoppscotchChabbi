@@ -67,12 +67,42 @@ jobs:
         # Exit with success even if tests fail to ensure we upload artifacts
         exit 0
 
+    - name: Convert XML to HTML
+      if: always()
+      run: |
+        echo "Converting JUnit XML to HTML report..."
+        
+        # Create a directory for HTML reports
+        mkdir -p chabbi_project/test-results/html
+        
+        # Install xsltproc for XML transformation
+        sudo apt-get update
+        sudo apt-get install -y xsltproc
+        
+        # Transform XML to HTML using XSLT
+        if [ -f chabbi_project/test-results/junit-report.xml ]; then
+          xsltproc .github/junit-to-html.xsl chabbi_project/test-results/junit-report.xml > chabbi_project/test-results/html/test-report.html
+          echo "HTML report generated successfully"
+        else
+          echo "ERROR: JUnit XML file not found, cannot generate HTML report"
+          # Create a simple error HTML file
+          echo "<html><body><h1>Error</h1><p>JUnit XML report was not found.</p></body></html>" > chabbi_project/test-results/html/error.html
+        fi
+
     - name: Upload JUnit XML Results
       uses: actions/upload-artifact@v4
       if: always()  # Run even if tests fail
       with:
         name: junit-test-results
         path: chabbi_project/test-results/junit-report.xml
+        retention-days: 7
+        
+    - name: Upload HTML Report
+      uses: actions/upload-artifact@v4
+      if: always()  # Run even if tests fail
+      with:
+        name: html-test-results
+        path: chabbi_project/test-results/html/
         retention-days: 7
         
     - name: Echo Success
